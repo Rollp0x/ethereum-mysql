@@ -1,0 +1,15 @@
+[package]
+name = "ethereum-mysql"
+version = "0.1.0"
+edition = "2024"
+description = "Ethereum Address wrapper for seamless MySQL integration with SQLx (Work in Progress)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Rollp0x/ethereum-mysql"
+keywords = ["ethereum", "mysql", "sqlx", "address", "database"]
+categories = ["database", "web-programming"]
+readme = "README.md"
+
+[dependencies]
+alloy = { version = "1.0.7", default-features = false }
+sqlx = { version = "0.8.6", features = ["mysql"] }
+serde = { version = "1.0.219", features = ["derive"] }
