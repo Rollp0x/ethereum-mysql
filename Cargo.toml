@@ -1,15 +1,34 @@
 [package]
 name = "ethereum-mysql"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
-description = "Ethereum Address wrapper for seamless MySQL integration with SQLx (Work in Progress)"
+description = "Ethereum types wrapper for seamless SQL database integration with SQLx"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Rollp0x/ethereum-mysql"
-keywords = ["ethereum", "mysql", "sqlx", "address", "database"]
+keywords = ["ethereum", "sql", "sqlx", "address", "database"]
 categories = ["database", "web-programming"]
 readme = "README.md"
 
+
+[features]
+default = []
+# Database support
+mysql = ["sqlx/mysql"]
+postgres = ["sqlx/postgres"] 
+sqlite = ["sqlx/sqlite"]
+# Serialization support
+serde = ["dep:serde", "alloy/serde"]
+full = [
+    "mysql","postgres","sqlite","serde"
+]
+
 [dependencies]
 alloy = { version = "1.0.7", default-features = false }
-sqlx = { version = "0.8.6", features = ["mysql"] }
-serde = { version = "1.0.219", features = ["derive"] }
+sqlx = { version = "0.8.6", default-features = false }
+serde = { version = "1.0.219", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+# SQLx with runtime support for database integration tests
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "postgres", "sqlite"] }
