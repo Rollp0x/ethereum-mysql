@@ -1,12 +1,12 @@
 [package]
 name = "ethereum-mysql"
-version = "1.0.0"
+version = "1.5.0"
 edition = "2021" 
-description = "Ethereum types wrapper for seamless SQL database integration with SQLx"
+description = "Ethereum types (Address, U256) wrapper for seamless SQL database integration with SQLx"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Rollp0x/ethereum-mysql"
-keywords = ["ethereum", "sql", "sqlx", "address", "database"]
-categories = ["database", "web-programming"]
+keywords = ["ethereum", "sql", "sqlx", "u256", "database"]
+categories = ["database", "web-programming", "cryptography"]
 readme = "README.md"
 
 
