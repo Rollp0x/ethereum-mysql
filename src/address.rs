@@ -31,7 +31,7 @@ use alloy::primitives::Address;
 /// let sql_addr = SqlAddress::from_str("0x0000000000000000000000000000000000000000").unwrap();
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SqlAddress(Address);
 
 impl SqlAddress {
@@ -463,5 +463,93 @@ mod tests {
         // Verify it works in different contexts
         const ZERO_CONST: SqlAddress = SqlAddress::ZERO;
         assert_eq!(ZERO_CONST, SqlAddress::ZERO);
+    }
+
+    #[test]
+    fn test_sql_address_hash() {
+        use std::collections::{HashMap, HashSet};
+        
+        let addr1 = sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d");
+        let addr2 = sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d");
+        let addr3 = sqladdress!("0x1234567890123456789012345678901234567890");
+        
+        // Test Hash trait - equal addresses should have equal hashes
+        use std::hash::{Hash, Hasher, DefaultHasher};
+        
+        let mut hasher1 = DefaultHasher::new();
+        let mut hasher2 = DefaultHasher::new();
+        let mut hasher3 = DefaultHasher::new();
+        
+        addr1.hash(&mut hasher1);
+        addr2.hash(&mut hasher2);
+        addr3.hash(&mut hasher3);
+        
+        assert_eq!(hasher1.finish(), hasher2.finish());
+        assert_ne!(hasher1.finish(), hasher3.finish());
+        
+        // Test usage in HashSet
+        let mut address_set = HashSet::new();
+        address_set.insert(addr1);
+        address_set.insert(addr2); // Should not increase size since addr1 == addr2
+        address_set.insert(addr3);
+        
+        assert_eq!(address_set.len(), 2);
+        assert!(address_set.contains(&addr1));
+        assert!(address_set.contains(&addr2));
+        assert!(address_set.contains(&addr3));
+        
+        // Test usage in HashMap
+        let mut address_map = HashMap::new();
+        address_map.insert(addr1, "First address");
+        address_map.insert(addr2, "Same address"); // Should overwrite
+        address_map.insert(addr3, "Different address");
+        
+        assert_eq!(address_map.len(), 2);
+        assert_eq!(address_map.get(&addr1), Some(&"Same address"));
+        assert_eq!(address_map.get(&addr2), Some(&"Same address"));
+        assert_eq!(address_map.get(&addr3), Some(&"Different address"));
+    }
+
+    #[test]
+    fn test_sql_address_hash_consistency_with_alloy_address() {
+        use std::hash::{Hash, Hasher, DefaultHasher};
+        
+        fn calculate_hash<T: Hash>(t: &T) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            t.hash(&mut hasher);
+            hasher.finish()
+        }
+        
+        let test_addresses = [
+            "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d",
+            "0x0000000000000000000000000000000000000000", 
+            "0xffffffffffffffffffffffffffffffffffffffff",
+            "0x1234567890123456789012345678901234567890",
+        ];
+        
+        for addr_str in &test_addresses {
+            let alloy_addr = Address::from_str(addr_str).unwrap();
+            let sql_addr = SqlAddress::from_str(addr_str).unwrap();
+            
+            let alloy_hash = calculate_hash(&alloy_addr);
+            let sql_hash = calculate_hash(&sql_addr);
+            
+            // Critical: SqlAddress must produce the same hash as the underlying Address
+            assert_eq!(alloy_hash, sql_hash, 
+                "Hash mismatch for address {}: alloy={}, sql={}", 
+                addr_str, alloy_hash, sql_hash);
+        }
+        
+        // Test conversion consistency
+        let original = Address::from_str(TEST_ADDRESS_STR).unwrap();
+        let sql_wrapped = SqlAddress::from(original);
+        let converted_back: Address = sql_wrapped.into();
+        
+        assert_eq!(calculate_hash(&original), calculate_hash(&sql_wrapped));
+        assert_eq!(calculate_hash(&original), calculate_hash(&converted_back));
+        assert_eq!(calculate_hash(&sql_wrapped), calculate_hash(&converted_back));
+        
+        // Test zero address consistency
+        assert_eq!(calculate_hash(&Address::ZERO), calculate_hash(&SqlAddress::ZERO));
     }
 }

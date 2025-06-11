@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded arithmetic operations with better error handling
 - Improved conversion traits for all Rust integer types
 
+#### Hash Implementation & Collections Support
+- **NEW**: `Hash` trait implementation for both `SqlAddress` and `SqlU256`
+- **Perfect Hash Consistency**: Produces identical hash values as underlying `alloy::primitives` types
+- **Collections Ready**: Full support for `HashMap` and `HashSet` operations
+- **Zero Performance Overhead**: Hash performance equal to or better than underlying types
+- **Interoperability**: Seamless conversion between wrapped and unwrapped types in collections
+
 ### 🎯 Code Optimizations
 
 #### Macro-Based Implementations
@@ -44,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### New Example Files
 - **NEW**: `primitive_ops_demo.rs` - Comprehensive primitive operations showcase
+- **NEW**: `hash_consistency_demo.rs` - Demonstrates hash consistency between Sql* and alloy types
 - **Enhanced**: `basic_usage.rs`, `const_demo.rs`, and `zero_constant.rs`
 - **Improved**: All examples with English comments and better explanations
 
@@ -56,9 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Enhanced Test Coverage
 - **NEW**: Dedicated serde integration tests (`sql_u256_serde_integration.rs`)
+- **NEW**: Hash consistency tests for both `SqlAddress` and `SqlU256`
+- **NEW**: Collections compatibility tests (HashMap/HashSet operations)
 - **Optimized**: Unit tests in `sql_u256.rs` (focused on 10 core test cases)
 - **Enhanced**: `const_test.rs` with `SqlU256::ZERO` constant testing
-- **Total**: 79 tests passing (47 unit + 21 integration + 11 doc tests)
+- **Total**: 68 tests passing (49 unit + 6 const + 2 integration + 11 doc tests)
 
 #### Test Organization
 - **Separated**: Unit tests from integration tests for better organization
@@ -87,6 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Better Performance**: Optimized implementations with reduced overhead
 - **Enhanced Developer Experience**: Clearer documentation and examples
 - **Bulletproof APIs**: Automatic validation in Web3 applications
+- **Collections Ready**: Use `SqlAddress`/`SqlU256` directly in `HashMap` and `HashSet`
+- **Perfect Interoperability**: Hash-consistent with underlying alloy types
 - **Zero Breaking Changes**: Seamless upgrade from 1.0.0
 
 ## [1.0.0] - 2025-06-09

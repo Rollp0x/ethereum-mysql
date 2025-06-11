@@ -51,7 +51,7 @@ mod primitive_ops;
 /// let back_to_u64: u64 = from_u64.try_into().unwrap(); // SqlU256 -> u64 (may overflow)
 /// ```
 #[cfg_attr(feature = "serde", derive(Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SqlU256(U256);
 
 impl SqlU256 {
@@ -449,5 +449,116 @@ mod tests {
         
         // Should contain the inner U256 value
         assert!(debug_str.contains("SqlU256"));
+    }
+
+    #[test]
+    fn test_sql_u256_hash() {
+        use std::collections::{HashMap, HashSet};
+        
+        let val1 = SqlU256::from(123u64);
+        let val2 = SqlU256::from(123u64);
+        let val3 = SqlU256::from(456u64);
+        
+        // Test Hash trait - equal values should have equal hashes
+        use std::hash::{Hash, Hasher, DefaultHasher};
+        
+        let mut hasher1 = DefaultHasher::new();
+        let mut hasher2 = DefaultHasher::new();
+        let mut hasher3 = DefaultHasher::new();
+        
+        val1.hash(&mut hasher1);
+        val2.hash(&mut hasher2);
+        val3.hash(&mut hasher3);
+        
+        assert_eq!(hasher1.finish(), hasher2.finish());
+        assert_ne!(hasher1.finish(), hasher3.finish());
+        
+        // Test usage in HashSet
+        let mut value_set = HashSet::new();
+        value_set.insert(val1);
+        value_set.insert(val2); // Should not increase size since val1 == val2
+        value_set.insert(val3);
+        value_set.insert(SqlU256::ZERO);
+        
+        assert_eq!(value_set.len(), 3);
+        assert!(value_set.contains(&val1));
+        assert!(value_set.contains(&val2));
+        assert!(value_set.contains(&val3));
+        assert!(value_set.contains(&SqlU256::ZERO));
+        
+        // Test usage in HashMap
+        let mut value_map = HashMap::new();
+        value_map.insert(val1, "First value");
+        value_map.insert(val2, "Same value"); // Should overwrite
+        value_map.insert(val3, "Different value");
+        value_map.insert(SqlU256::ZERO, "Zero value");
+        
+        assert_eq!(value_map.len(), 3);
+        assert_eq!(value_map.get(&val1), Some(&"Same value"));
+        assert_eq!(value_map.get(&val2), Some(&"Same value"));
+        assert_eq!(value_map.get(&val3), Some(&"Different value"));
+        assert_eq!(value_map.get(&SqlU256::ZERO), Some(&"Zero value"));
+        
+        // Test with large values
+        let large1 = SqlU256::from_str("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
+        let large2 = SqlU256::from_str("115792089237316195423570985008687907853269984665640564039457584007913129639935").unwrap(); // Same as large1 in decimal
+        
+        let mut large_hasher1 = DefaultHasher::new();
+        let mut large_hasher2 = DefaultHasher::new();
+        
+        large1.hash(&mut large_hasher1);
+        large2.hash(&mut large_hasher2);
+        
+        assert_eq!(large_hasher1.finish(), large_hasher2.finish());
+        assert_eq!(large1, large2);
+    }
+
+    #[test]
+    fn test_sql_u256_hash_consistency_with_alloy_u256() {
+        use std::hash::{Hash, Hasher, DefaultHasher};
+        
+        fn calculate_hash<T: Hash>(t: &T) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            t.hash(&mut hasher);
+            hasher.finish()
+        }
+        
+        let test_values = [
+            "0",
+            "42",
+            "1000000000000000000",
+            "0x75bcd15",
+            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        ];
+        
+        for value_str in &test_values {
+            let alloy_u256 = U256::from_str(value_str).unwrap();
+            let sql_u256 = SqlU256::from_str(value_str).unwrap();
+            
+            let alloy_hash = calculate_hash(&alloy_u256);
+            let sql_hash = calculate_hash(&sql_u256);
+            
+            // Critical: SqlU256 must produce the same hash as the underlying U256
+            assert_eq!(alloy_hash, sql_hash, 
+                "Hash mismatch for value {}: alloy={}, sql={}", 
+                value_str, alloy_hash, sql_hash);
+        }
+        
+        // Test conversion consistency
+        let original = U256::from(12345u64);
+        let sql_wrapped = SqlU256::from(original);
+        let converted_back: U256 = sql_wrapped.into();
+        
+        assert_eq!(calculate_hash(&original), calculate_hash(&sql_wrapped));
+        assert_eq!(calculate_hash(&original), calculate_hash(&converted_back));
+        assert_eq!(calculate_hash(&sql_wrapped), calculate_hash(&converted_back));
+        
+        // Test zero constant consistency
+        assert_eq!(calculate_hash(&U256::ZERO), calculate_hash(&SqlU256::ZERO));
+        
+        // Test maximum value consistency
+        let max_alloy = U256::MAX;
+        let max_sql = SqlU256::from(max_alloy);
+        assert_eq!(calculate_hash(&max_alloy), calculate_hash(&max_sql));
     }
 }
