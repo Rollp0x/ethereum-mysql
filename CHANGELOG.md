@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-06-18
+
+### 🚀 Major New Features
+
+#### Comprehensive Comparison and Ordering Support
+- **NEW**: `PartialOrd` and `Ord` trait implementations for both `SqlAddress` and `SqlU256`
+- **Full Comparison Operations**: Support for `>`, `<`, `>=`, `<=` operators on both types
+- **Collection Sorting**: Enable `.sort()` on `Vec<SqlU256>` and `Vec<SqlAddress>`
+- **Min/Max Operations**: Built-in `.min()` and `.max()` methods for both types
+
+#### DeFi and Blockchain-Optimized Features
+- **UniswapV2 Compatible**: Perfect for token address ordering (`token0 < token1`)
+- **Balance Comparisons**: Ideal for fund checks, transfer validations, and balance thresholds
+- **Price Analysis**: Seamless price comparisons and ratio calculations
+- **Gas Optimization**: Direct comparison for gas fees and cost analysis
+
+#### Real-World Use Cases
+- **DEX Development**: Automatic token pair ordering for consistent pair addresses
+- **Security Checks**: Balance validation before transfers and operations
+- **Portfolio Management**: Asset sorting and price range analysis
+- **Database Queries**: Enhanced SQL compatibility with comparison-based filtering
+
+### 📊 Examples and Documentation
+- **NEW**: `comparison_demo.rs` - Comprehensive demonstration of all comparison features
+- **NEW**: `uniswap_ordering.rs` - Real-world UniswapV2 token ordering scenarios
+- **Enhanced README**: Added comparison examples for DeFi and blockchain use cases
+- **Complete Test Coverage**: 5 new comprehensive tests covering all comparison scenarios
+
+### ⚡ Performance and Compatibility
+- **Zero Overhead**: Comparison operations delegate directly to underlying `alloy::primitives` types
+- **Consistent Behavior**: Identical comparison logic to native `U256` and `Address` types
+- **Full Interoperability**: Seamless sorting and comparison with mixed collection types
+
 ## [1.5.0] - 2025-06-10
 
 ### 🚀 Major New Features
@@ -132,5 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database schema examples
 - Integration examples with real SQLx code
 
+[1.6.0]: https://github.com/Rollp0x/ethereum-mysql/releases/tag/v1.6.0
+[1.6.0]: https://github.com/Rollp0x/ethereum-mysql/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Rollp0x/ethereum-mysql/releases/tag/v1.5.0
 [1.0.0]: https://github.com/Rollp0x/ethereum-mysql/releases/tag/v1.0.0

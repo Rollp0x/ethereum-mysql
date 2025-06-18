@@ -51,7 +51,7 @@ mod primitive_ops;
 /// let back_to_u64: u64 = from_u64.try_into().unwrap(); // SqlU256 -> u64 (may overflow)
 /// ```
 #[cfg_attr(feature = "serde", derive(Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SqlU256(U256);
 
 impl SqlU256 {

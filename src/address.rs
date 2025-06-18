@@ -31,7 +31,7 @@ use alloy::primitives::Address;
 /// let sql_addr = SqlAddress::from_str("0x0000000000000000000000000000000000000000").unwrap();
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SqlAddress(Address);
 
 impl SqlAddress {

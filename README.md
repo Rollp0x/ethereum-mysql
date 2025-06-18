@@ -199,6 +199,25 @@ let gcd = SqlU256::from(12u64).gcd(SqlU256::from(8u64)); // 4
 let checked_sum = a.checked_add(b); // Some(150)
 let saturated = a.saturating_sub(SqlU256::from(200u64)); // 0
 
+// 🆕 NEW: Comparison operations
+assert!(a > b);                     // 100 > 50
+assert!(b < a);                     // 50 < 100  
+assert!(a >= SqlU256::from(100u64)); // 100 >= 100
+assert!(zero < a);                  // 0 < 100
+
+// Min/max operations
+let min_val = a.min(b);             // 50
+let max_val = a.max(b);             // 100
+
+// Sorting collections
+let mut values = vec![
+    SqlU256::from(300u64),
+    SqlU256::from(100u64), 
+    SqlU256::ZERO,
+    SqlU256::from(200u64),
+];
+values.sort(); // [0, 100, 200, 300]
+
 // 🔄 Converting back to original types
 let sql_value = SqlU256::from(42u64);
 
