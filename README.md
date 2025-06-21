@@ -117,14 +117,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 # Basic usage (no default features)
-ethereum-mysql = "1.0.0"
+ethereum-mysql = "1.6.1"
 
 # Enable specific databases
-ethereum-mysql = { version = "1.0.0", features = ["mysql"] }
-ethereum-mysql = { version = "1.0.0", features = ["postgres", "serde"] }
+ethereum-mysql = { version = "1.6.1", features = ["mysql"] }
+ethereum-mysql = { version = "1.6.1", features = ["postgres", "serde"] }
 
 # Enable all features
-ethereum-mysql = { version = "1.0.0", features = ["full"] }
+ethereum-mysql = { version = "1.6.1", features = ["full"] }
 ```
 
 ## Feature Flags

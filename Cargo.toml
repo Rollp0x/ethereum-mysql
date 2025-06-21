@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-mysql"
-version = "1.6.0"
+version = "1.6.1"
 edition = "2021" 
 description = "Ethereum types (Address, U256) wrapper for seamless SQL database integration with SQLx"
 license = "MIT OR Apache-2.0"
@@ -23,7 +23,7 @@ full = [
 ]
 
 [dependencies]
-alloy = { version = "1.0.7", default-features = false }
+alloy = { version = "1.0.3", default-features = false }
 sqlx = { version = "0.8", default-features = false } 
 serde = { version = "1.0", features = ["derive"], optional = true }
 
