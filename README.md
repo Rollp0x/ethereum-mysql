@@ -119,7 +119,7 @@ Add to your `Cargo.toml`:
 ethereum-mysql = "2.0.0"
 
 # Enable sqlx feature
-ethereum-mysql = { version = "2.0.0", default-features = false features = ["sqlx"] }
+ethereum-mysql = { version = "2.0.0", default-features = false, features = ["sqlx"] }
 
 # Enable all features
 ethereum-mysql = { version = "2.0.0", features = ["full"] }
