@@ -105,7 +105,10 @@ mod tests {
         assert_eq!(SqlU256::from(42u8), SqlU256(U256::from(42)));
         assert_eq!(SqlU256::from(1000u16), SqlU256(U256::from(1000)));
         assert_eq!(SqlU256::from(100000u32), SqlU256(U256::from(100000)));
-        assert_eq!(SqlU256::from(10000000000u64), SqlU256(U256::from(10000000000u64)));
+        assert_eq!(
+            SqlU256::from(10000000000u64),
+            SqlU256(U256::from(10000000000u64))
+        );
         assert_eq!(SqlU256::from(u128::MAX), SqlU256(U256::from(u128::MAX)));
         assert_eq!(SqlU256::from(123usize), SqlU256(U256::from(123)));
     }
@@ -113,11 +116,26 @@ mod tests {
     #[test]
     fn test_try_from_positive_signed_integers() {
         assert_eq!(SqlU256::try_from(42i8).unwrap(), SqlU256(U256::from(42)));
-        assert_eq!(SqlU256::try_from(1000i16).unwrap(), SqlU256(U256::from(1000)));
-        assert_eq!(SqlU256::try_from(100000i32).unwrap(), SqlU256(U256::from(100000)));
-        assert_eq!(SqlU256::try_from(10000000000i64).unwrap(), SqlU256(U256::from(10000000000u64)));
-        assert_eq!(SqlU256::try_from(i128::MAX).unwrap(), SqlU256(U256::from(i128::MAX as u128)));
-        assert_eq!(SqlU256::try_from(123isize).unwrap(), SqlU256(U256::from(123)));
+        assert_eq!(
+            SqlU256::try_from(1000i16).unwrap(),
+            SqlU256(U256::from(1000))
+        );
+        assert_eq!(
+            SqlU256::try_from(100000i32).unwrap(),
+            SqlU256(U256::from(100000))
+        );
+        assert_eq!(
+            SqlU256::try_from(10000000000i64).unwrap(),
+            SqlU256(U256::from(10000000000u64))
+        );
+        assert_eq!(
+            SqlU256::try_from(i128::MAX).unwrap(),
+            SqlU256(U256::from(i128::MAX as u128))
+        );
+        assert_eq!(
+            SqlU256::try_from(123isize).unwrap(),
+            SqlU256(U256::from(123))
+        );
     }
 
     #[test]
@@ -159,7 +177,7 @@ mod tests {
         // Test that we can chain conversions naturally
         let value: SqlU256 = 42u64.into();
         assert_eq!(value, SqlU256(U256::from(42)));
-        
+
         let back: u64 = value.try_into().unwrap();
         assert_eq!(back, 42u64);
     }

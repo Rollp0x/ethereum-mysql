@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-06-27
+
+### Breaking Changes
+- Major refactor: SqlU256 and related types now use the ruint-style implementation for improved performance and compatibility.
+- **Database schema change:**
+  - The recommended database column type for `SqlAddress` is now `BINARY(20)` (MySQL/SQLite), `BYTEA` (Postgres), or an equivalent binary type. This ensures correct roundtrip and storage of Ethereum addresses.
+  - If you previously used `TEXT` or other string types, you must migrate your schema and data to binary format.
+- This release is not backward compatible with previous versions that stored addresses as text.
+
+### Other
+- Updated documentation and examples to reflect the new binary storage format and ruint-based implementation.
+- Minimum required Rust version and dependency versions unchanged.
+
 ## [1.6.1] - 2025-06-21
 
 ### 🔧 Dependencies

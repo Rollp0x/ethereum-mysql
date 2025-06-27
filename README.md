@@ -112,27 +112,23 @@ async fn transfer(Json(req): Json<TransferRequest>) -> Result<Response, Error> {
 ```
 
 ## Quick Start
-
 Add to your `Cargo.toml`:
 
 ```toml
-# Basic usage (no default features)
-ethereum-mysql = "1.6.1"
+# Basic usage default features
+ethereum-mysql = "2.0.0"
 
-# Enable specific databases
-ethereum-mysql = { version = "1.6.1", features = ["mysql"] }
-ethereum-mysql = { version = "1.6.1", features = ["postgres", "serde"] }
+# Enable sqlx feature
+ethereum-mysql = { version = "2.0.0", default-features = false features = ["sqlx"] }
 
 # Enable all features
-ethereum-mysql = { version = "1.6.1", features = ["full"] }
+ethereum-mysql = { version = "2.0.0", features = ["full"] }
 ```
 
 ## Feature Flags
-
-- `mysql` - MySQL/MariaDB support via SQLx
-- `postgres` - PostgreSQL support via SQLx
-- `sqlite` - SQLite support via SQLx  
+- `sqlx` - DB support via SQLx  
 - `serde` - JSON serialization support
+- `default` - Enable all features above
 - `full` - Enable all features above
 
 ## Usage Examples
@@ -254,7 +250,16 @@ async fn main() -> Result<(), sqlx::Error> {
     // Insert address and balance directly - no manual conversion needed
     let user_address = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
     let balance = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH in wei
-    
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            wallet_address BINARY(20) NOT NULL,
+            balance BINARY(32),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+    )
+    .execute(&pool)
+    .await
     sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
         .bind(&user_address)  // SqlAddress implements sqlx::Encode
         .bind(&balance)       // SqlU256 implements sqlx::Encode
@@ -473,69 +478,15 @@ async fn api_transfer(
 ```sql
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    wallet_address VARCHAR(42) NOT NULL,
-    balance VARCHAR(66) NOT NULL DEFAULT '0x0',  -- SqlU256 as hex string (max 66 chars)
-    token_amount VARCHAR(66) DEFAULT NULL,       -- Optional SqlU256 field
+    wallet_address BINARY(20) NOT NULL,
+    balance BINARY(32) NOT NULL, 
+    token_amount BINARY(32) DEFAULT NULL,       -- Optional SqlU256 field
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_wallet (wallet_address),
     INDEX idx_balance (balance)
 );
 
--- Example with transactions
-CREATE TABLE transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    from_address VARCHAR(42) NOT NULL,
-    to_address VARCHAR(42) NOT NULL,
-    amount VARCHAR(66) NOT NULL,                 -- SqlU256 transaction amount
-    gas_price VARCHAR(66) NOT NULL,              -- SqlU256 gas price
-    gas_limit VARCHAR(66) NOT NULL,              -- SqlU256 gas limit
-    block_number VARCHAR(66) NOT NULL,           -- SqlU256 block number
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 ```
-
-### PostgreSQL
-
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    wallet_address VARCHAR(42) NOT NULL,
-    balance VARCHAR(66) NOT NULL DEFAULT '0x0',  -- SqlU256 as hex string
-    token_amount VARCHAR(66) DEFAULT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_wallet ON users(wallet_address);
-CREATE INDEX idx_balance ON users(balance);
-
--- PostgreSQL supports better constraints
-ALTER TABLE users ADD CONSTRAINT balance_format 
-    CHECK (balance ~ '^0x[0-9a-fA-F]+$');       -- Ensure hex format
-```
-
-### SQLite
-
-```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    wallet_address TEXT NOT NULL,
-    balance TEXT NOT NULL DEFAULT '0x0',         -- SqlU256 as hex string
-    token_amount TEXT DEFAULT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_wallet ON users(wallet_address);
-CREATE INDEX idx_balance ON users(balance);
-```
-
-## Important Notes
-
-### SqlU256 Storage Format
-
-- **Database Storage**: Always stored as hexadecimal strings (e.g., `"0x1a2b3c"`)
-- **Input Flexibility**: `FromStr` accepts both decimal (`"123"`) and hex (`"0x7b"`) formats
-- **Output Consistency**: `Display` and JSON serialization always use hex format
-- **Max Length**: 66 characters (`0x` + 64 hex digits for U256::MAX)
 
 ### Type Safety
 
@@ -570,7 +521,7 @@ This library is built specifically for [SQLx](https://github.com/launchbadge/sql
 ## Requirements
 
 - Rust 1.75+ (2024 edition)
-- SQLx 0.8+
+- sqlx_core 0.8+
 - alloy 1.0+
 
 ## License
@@ -582,53 +533,6 @@ Licensed under either of:
 
 at your option.
 
-## 📊 Comparison with Traditional Approaches
-
-| Aspect | Traditional String-Based | **ethereum-mysql Library** |
-|--------|-------------------------|----------------------------|
-| **Type Safety** | ❌ Manual validation required | ✅ Automatic validation during deserialization |
-| **API Security** | ❌ Invalid data reaches business logic | ✅ Invalid data rejected at API boundary |
-| **Code Verbosity** | ❌ Repetitive validation code | ✅ Zero validation boilerplate |
-| **Runtime Errors** | ❌ Common string conversion failures | ✅ Compile-time safety + early validation |
-| **Database Integration** | ❌ Manual string conversion steps | ✅ Direct type binding/retrieval |
-| **Arithmetic Operations** | ❌ Verbose type conversions | ✅ Direct primitive arithmetic (`value * 2`) |
-| **Development Speed** | ❌ Slow (manual validation everywhere) | ✅ Fast (focus on business logic) |
-| **Bug Probability** | ❌ High (forgotten validations) | ✅ Low (impossible to forget validation) |
-| **Input Format Support** | ❌ Usually only one format | ✅ Both decimal and hex automatically |
-| **Performance** | ❌ Extra conversion overhead | ✅ Zero conversion overhead |
-
-### 🎯 Real-World Impact Example
-
-```rust
-// ❌ Traditional approach: ~15 lines of validation code per endpoint
-async fn old_transfer_handler(body: String) -> Result<Response, Error> {
-    let req: serde_json::Value = serde_json::from_str(&body)?;
-    
-    // Manual validation - error-prone and repetitive
-    let from_str = req["from"].as_str().ok_or(Error::InvalidInput)?;
-    let to_str = req["to"].as_str().ok_or(Error::InvalidInput)?;
-    let amount_str = req["amount"].as_str().ok_or(Error::InvalidInput)?;
-    
-    // More validation - can be forgotten!
-    let from_addr = Address::from_str(from_str).map_err(|_| Error::InvalidAddress)?;
-    let to_addr = Address::from_str(to_str).map_err(|_| Error::InvalidAddress)?;
-    let amount = U256::from_str(amount_str).map_err(|_| Error::InvalidAmount)?;
-    
-    // Convert for database - more overhead
-    let from_sql = SqlAddress::from(from_addr);
-    let to_sql = SqlAddress::from(to_addr);
-    let amount_sql = SqlU256::from(amount);
-    
-    // Finally, business logic...
-    execute_transfer(&from_sql, &to_sql, &amount_sql, &pool).await
-}
-
-// ✅ Our approach: ~3 lines total, impossible to forget validation
-async fn new_transfer_handler(Json(req): Json<TransferRequest>) -> Result<Response, Error> {
-    // All validation automatic! If we're here, data is guaranteed valid.
-    execute_transfer(&req.from, &req.to, &req.amount, &pool).await
-}
-```
 
 ## Contributing
 

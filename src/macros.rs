@@ -5,7 +5,7 @@
 ///
 /// This macro accepts hex strings with or without the "0x" prefix and creates
 /// a SqlAddress at compile time. The input is validated at compile time.
-/// 
+///
 /// The macro supports both runtime and const contexts, making it suitable
 /// for declaring const SqlAddress values.
 ///
@@ -32,5 +32,3 @@ macro_rules! sqladdress {
         $crate::SqlAddress::new($crate::alloy::primitives::address!($s))
     };
 }
-
-

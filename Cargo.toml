@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-mysql"
-version = "1.6.1"
+version = "2.0.0"
 edition = "2021" 
 description = "Ethereum types (Address, U256) wrapper for seamless SQL database integration with SQLx"
 license = "MIT OR Apache-2.0"
@@ -8,27 +8,26 @@ repository = "https://github.com/Rollp0x/ethereum-mysql"
 keywords = ["ethereum", "sql", "sqlx", "u256", "database"]
 categories = ["database", "web-programming", "cryptography"]
 readme = "README.md"
-
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = []
-# Database support
-mysql = ["sqlx/mysql"]
-postgres = ["sqlx/postgres"] 
-sqlite = ["sqlx/sqlite"]
+default = ["sqlx","serde"]
+sqlx = ["dep:sqlx-core","dep:thiserror"]
 # Serialization support
 serde = ["dep:serde", "alloy/serde"]
-full = [
-    "mysql","postgres","sqlite","serde"
-]
+full = ["sqlx","serde"]
 
 [dependencies]
 alloy = { version = "1.0.3", default-features = false }
-sqlx = { version = "0.8", default-features = false } 
+sqlx-core = {version = "0.8",optional = true}
 serde = { version = "1.0", features = ["derive"], optional = true }
+thiserror = { version = "2.0", optional = true }
 
 [dev-dependencies]
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
 # SQLx with runtime support for database integration tests
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "mysql", "postgres", "sqlite"] }
+
+[package.metadata.docs.rs]
+features = ["sqlx", "serde"]

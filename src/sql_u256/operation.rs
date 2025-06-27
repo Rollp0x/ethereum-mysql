@@ -5,7 +5,7 @@
 
 use super::SqlU256;
 use alloy::primitives::U256;
-use std::ops::{Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shl, Shr, Not};
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Not, Rem, Shl, Shr, Sub};
 
 /// Macro to implement binary arithmetic operations for all reference combinations
 macro_rules! impl_binary_op {
@@ -125,13 +125,13 @@ impl SqlU256 {
     pub fn gcd(self, other: Self) -> Self {
         let mut a = self.0;
         let mut b = other.0;
-        
+
         while !b.is_zero() {
             let temp = b;
             b = a % b;
             a = temp;
         }
-        
+
         SqlU256(a)
     }
 
@@ -191,12 +191,20 @@ impl SqlU256 {
 
     /// Returns the minimum of two values
     pub fn min(self, other: Self) -> Self {
-        if self.0 < other.0 { self } else { other }
+        if self.0 < other.0 {
+            self
+        } else {
+            other
+        }
     }
 
     /// Returns the maximum of two values
     pub fn max(self, other: Self) -> Self {
-        if self.0 > other.0 { self } else { other }
+        if self.0 > other.0 {
+            self
+        } else {
+            other
+        }
     }
 }
 
@@ -240,7 +248,7 @@ mod tests {
     #[test]
     fn test_shift_operations() {
         let a = SqlU256::from(8u64);
-        
+
         assert_eq!(a << 1, SqlU256::from(16u64));
         assert_eq!(a >> 1, SqlU256::from(4u64));
         assert_eq!(a << 3, SqlU256::from(64u64));
@@ -254,8 +262,14 @@ mod tests {
 
         assert_eq!(a.square(), SqlU256::from(25u64));
         assert_eq!(a.pow(3), SqlU256::from(125u64));
-        assert_eq!(SqlU256::from(12u64).gcd(SqlU256::from(8u64)), SqlU256::from(4u64));
-        assert_eq!(SqlU256::from(12u64).lcm(SqlU256::from(8u64)), SqlU256::from(24u64));
+        assert_eq!(
+            SqlU256::from(12u64).gcd(SqlU256::from(8u64)),
+            SqlU256::from(4u64)
+        );
+        assert_eq!(
+            SqlU256::from(12u64).lcm(SqlU256::from(8u64)),
+            SqlU256::from(24u64)
+        );
     }
 
     #[test]

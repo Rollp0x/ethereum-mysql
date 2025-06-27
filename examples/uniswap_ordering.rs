@@ -7,7 +7,7 @@ fn main() {
     // Real token addresses from Ethereum mainnet
     let tokens = vec![
         ("WETH", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-        ("USDC", "0xA0b86a33E6441E85C7A4d8E4d80D6Bb4BF5BF2Aa"), 
+        ("USDC", "0xA0b86a33E6441E85C7A4d8E4d80D6Bb4BF5BF2Aa"),
         ("DAI", "0x6B175474E89094C44Da98b954EedeAC495271d0F"),
         ("USDT", "0xdAC17F958D2ee523a2206206994597C13D831ec7"),
         ("WBTC", "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"),
@@ -23,21 +23,20 @@ fn main() {
     }
 
     println!("\n🔄 UniswapV2 Pair Creation (token0 < token1):");
-    
+
     // Create all possible pairs and show ordering
     for i in 0..addresses.len() {
         for j in (i + 1)..addresses.len() {
             let (symbol_a, addr_a) = addresses[i];
             let (symbol_b, addr_b) = addresses[j];
-            
+
             // UniswapV2 ordering: token0 < token1
-            let (token0_symbol, token0_addr, token1_symbol, token1_addr) = 
-                if addr_a < addr_b {
-                    (symbol_a, addr_a, symbol_b, addr_b)
-                } else {
-                    (symbol_b, addr_b, symbol_a, addr_a)
-                };
-            
+            let (token0_symbol, token0_addr, token1_symbol, token1_addr) = if addr_a < addr_b {
+                (symbol_a, addr_a, symbol_b, addr_b)
+            } else {
+                (symbol_b, addr_b, symbol_a, addr_a)
+            };
+
             println!("  {}/{} pair:", symbol_a, symbol_b);
             println!("    token0: {} ({})", token0_symbol, token0_addr);
             println!("    token1: {} ({})", token1_symbol, token1_addr);
@@ -56,7 +55,7 @@ fn main() {
     println!("\n📈 Sorting All Tokens by Address:");
     let mut sorted_tokens = addresses.clone();
     sorted_tokens.sort_by(|a, b| a.1.cmp(&b.1));
-    
+
     for (i, (symbol, addr)) in sorted_tokens.iter().enumerate() {
         println!("  {}. {}: {}", i + 1, symbol, addr);
     }
