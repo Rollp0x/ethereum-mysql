@@ -1,5 +1,8 @@
-/// Basic SQLite tests (in-memory database, no external services required)
-#[cfg(feature = "sqlx")]
+
+
+
+// Basic SQLite tests (in-memory database, no external services required)
+#[cfg(feature = "sqlx_str")]
 mod sqlite_tests {
     use ethereum_mysql::{sqladdress, SqlAddress};
     use std::str::FromStr;
@@ -19,7 +22,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_addresses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                address BINARY(20) NOT NULL,
+                address VARCHAR(42) NOT NULL,
                 name TEXT
             )",
         )
@@ -62,7 +65,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_addresses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                address BINARY(20) NOT NULL,
+                address VARCHAR(42) NOT NULL,
                 name TEXT
             )",
         )
@@ -104,7 +107,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_addresses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                address BINARY(20) NOT NULL,
+                address VARCHAR(42) NOT NULL,
                 description TEXT
             )",
         )
@@ -167,7 +170,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_addresses (
                 user_id INTEGER,
-                wallet_address BINARY(20) NOT NULL,
+                wallet_address VARCHAR(42) NOT NULL,
                 is_primary BOOLEAN DEFAULT FALSE
             )",
         )
@@ -270,7 +273,7 @@ mod mysql_tests {
                 if sqlx::query(
                     "CREATE TABLE IF NOT EXISTS ethereum_addresses (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        address BINARY(20) NOT NULL,
+                        address VARCHAR(42) NOT NULL,
                         label VARCHAR(255),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )",
@@ -401,7 +404,7 @@ mod postgres_tests {
                 if sqlx::query(&format!(
                     "CREATE TABLE {} (
                         id SERIAL PRIMARY KEY,
-                        address BYTEA NOT NULL,
+                        address VARCHAR(42) NOT NULL,
                         label VARCHAR(255),
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                     )",
@@ -625,7 +628,7 @@ mod postgres_tests {
         sqlx::query(&format!(
             "CREATE TABLE {} (
                 user_id INTEGER,
-                wallet_address BYTEA NOT NULL,
+                wallet_address VARCHAR(42) NOT NULL,
                 wallet_name VARCHAR(255),
                 is_primary BOOLEAN DEFAULT FALSE,
                 balance_wei NUMERIC(78, 0) DEFAULT 0

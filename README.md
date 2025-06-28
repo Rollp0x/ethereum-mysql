@@ -21,6 +21,52 @@ This crate provides SQL-compatible wrappers for Ethereum types (`SqlAddress`, `S
 - **Serde support**: Optional JSON serialization with serde
 - **SQLx native**: Implements `sqlx::Type`, `sqlx::Encode`, and `sqlx::Decode`
 - **Pure Rust**: No C dependencies, works with SQLx's pure Rust philosophy
+- **Flexible database column type support**: Choose between binary and string column types for Ethereum Address and U256, controlled by feature flags
+
+## ⚡️ Flexible Database Column Type Support (Binary vs String)
+
+**ethereum-mysql** supports two mutually exclusive modes for database column types, controlled by Cargo features:
+
+- `sqlx` (or `sqlx_binary`): **Binary mode** (recommended for new projects)
+  - Use `BINARY(20)`/`BINARY(32)`/`BYTEA` columns for `SqlAddress`/`SqlU256`
+  - Fast, compact, and lossless
+- `sqlx_str`: **String mode** (for legacy or multi-language DBs)
+  - Use `VARCHAR(42)`/`VARCHAR(66)`/`TEXT` columns for `SqlAddress`/`SqlU256`
+  - Human-readable, compatible with systems that can't handle binary
+
+> **Note:** `sqlx`/`sqlx_binary` and `sqlx_str` **cannot be enabled at the same time**. Enabling both will result in a compile error. This ensures there is never a conflict in trait implementations or database column expectations.
+
+### Recommended Column Types
+
+| Feature      | Address Column Type | U256 Column Type |
+|--------------|--------------------|------------------|
+| `sqlx`       | BINARY(20)         | BINARY(32)       |
+| `sqlx_str`   | VARCHAR(42)        | VARCHAR(66)      |
+
+- For PostgreSQL, use `BYTEA` for binary mode, `TEXT` for string mode.
+- For MySQL/SQLite, use `BINARY`/`VARCHAR` as above.
+
+### Feature Matrix
+
+- `sqlx`/`sqlx_binary`: Binary DB column support (default for most users)
+- `sqlx_str`: String DB column support (for legacy/multi-language DBs)
+- `serde`: JSON serialization
+- `sqlx_full`: `sqlx` + `serde`
+- `sqlx_str_full`: `sqlx_str` + `serde`
+
+**Do not enable both `sqlx` and `sqlx_str` at the same time!**
+
+#### Example `Cargo.toml` Usage
+
+```toml
+# Binary mode (recommended)
+ethereum-mysql = { version = "2.1.0", features = ["sqlx_full"] }
+
+# String mode (legacy/multi-language)
+ethereum-mysql = { version = "2.1.0", features = ["sqlx_str_full"] }
+```
+
+---
 
 ## 🎯 Key Advantages
 
@@ -116,20 +162,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 # Basic usage default features
-ethereum-mysql = "2.0.0"
+ethereum-mysql = "2.1.0"
 
 # Enable sqlx feature
-ethereum-mysql = { version = "2.0.0", default-features = false, features = ["sqlx"] }
+ethereum-mysql = { version = "2.1.0",  features = ["sqlx_full"] }
 
 # Enable all features
-ethereum-mysql = { version = "2.0.0", features = ["full"] }
+ethereum-mysql = { version = "2.0.0", features = ["sqlx_str_full"] }
 ```
-
-## Feature Flags
-- `sqlx` - DB support via SQLx  
-- `serde` - JSON serialization support
-- `default` - Enable all features above
-- `full` - Enable all features above
 
 ## Usage Examples
 
@@ -236,7 +276,9 @@ let too_large = large.try_into::<u64>(); // Error - value too large for u64
 println!("{}", a); // "0x64"
 ```
 
-### SQLx Database Integration
+### SQLx Database Integration (Binary Mode)
+
+> **Requires:** `features = ["sqlx", "sqlx_binary"]` or `features = ["sqlx_full"]`
 
 ```rust
 use ethereum_mysql::{SqlAddress, SqlU256};
@@ -259,7 +301,7 @@ async fn main() -> Result<(), sqlx::Error> {
         )",
     )
     .execute(&pool)
-    .await
+    .await?;
     sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
         .bind(&user_address)  // SqlAddress implements sqlx::Encode
         .bind(&balance)       // SqlU256 implements sqlx::Encode
@@ -278,6 +320,56 @@ async fn main() -> Result<(), sqlx::Error> {
         let balance: SqlU256 = row.get("balance");           // SqlU256 implements sqlx::Decode
         
         // Perform arithmetic on retrieved values
+        let balance_in_eth = balance / SqlU256::from_str("1000000000000000000").unwrap();
+        println!("User {} has {} ETH", address, balance_in_eth);
+    }
+    
+    Ok(())
+}
+```
+
+### SQLx Database Integration (String Mode)
+
+> **Requires:** `features = ["sqlx_str"]` or `features = ["sqlx_str_full"]`
+
+```rust
+use ethereum_mysql::{SqlAddress, SqlU256};
+use sqlx::MySqlPool;
+use std::str::FromStr;
+
+#[tokio::main]
+async fn main() -> Result<(), sqlx::Error> {
+    let pool = MySqlPool::connect("mysql://user:pass@localhost/db").await?;
+    
+    // Insert address and balance as strings
+    let user_address = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
+    let balance = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH in wei
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            wallet_address VARCHAR(42) NOT NULL,
+            balance VARCHAR(66),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+    )
+    .execute(&pool)
+    .await?;
+    sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
+        .bind(&user_address)  // SqlAddress as string
+        .bind(&balance)       // SqlU256 as string
+        .execute(&pool)
+        .await?;
+    
+    // Query with arithmetic operations
+    let min_balance = SqlU256::from_str("500000000000000000").unwrap(); // 0.5 ETH in wei
+    let rows = sqlx::query("SELECT wallet_address, balance FROM users WHERE balance >= ?")
+        .bind(&min_balance)
+        .fetch_all(&pool)
+        .await?;
+    
+    for row in rows {
+        let address: SqlAddress = row.get("wallet_address");
+        let balance: SqlU256 = row.get("balance");
         let balance_in_eth = balance / SqlU256::from_str("1000000000000000000").unwrap();
         println!("User {} has {} ETH", address, balance_in_eth);
     }

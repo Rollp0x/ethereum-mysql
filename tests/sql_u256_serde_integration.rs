@@ -5,8 +5,7 @@
 
 #[cfg(all(test, feature = "serde"))]
 mod serde_tests {
-    use alloy::primitives::U256;
-    use ethereum_mysql::SqlU256;
+    use ethereum_mysql::{SqlU256, U256};
     use std::str::FromStr;
 
     #[test]

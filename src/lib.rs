@@ -35,14 +35,38 @@
 //! - **SQLx native**: Implements `sqlx::Type`, `sqlx::Encode`, and `sqlx::Decode`
 //! - **Pure Rust**: No C dependencies, works with SQLx's pure Rust philosophy
 //!
-//! ## Database Features
+//! ## Database Column Type Modes
 //!
-//! Enable the database you need (all via SQLx):
-//! - `sqlx` - MySQL/MariaDB support via SQLx
-//! - `serde` - JSON serialization support
-//! - `default` - Enable all features above
-//! - `full` - Enable all features above
+//! This crate supports two mutually exclusive modes for database column types, controlled by Cargo features:
 //!
+//! - `sqlx` or `sqlx_binary`: **Binary mode** (recommended for new projects)
+//!   - Use `BINARY(20)`/`BINARY(32)`/`BYTEA` columns for `SqlAddress`/`SqlU256`
+//!   - Fast, compact, and lossless
+//! - `sqlx_str`: **String mode** (for legacy or multi-language DBs)
+//!   - Use `VARCHAR(42)`/`VARCHAR(66)`/`TEXT` columns for `SqlAddress`/`SqlU256`
+//!   - Human-readable, compatible with systems that can't handle binary
+//!
+//! > **Note:** `sqlx`/`sqlx_binary` and `sqlx_str` cannot be enabled at the same time. Enabling both will result in a compile error.
+//!
+//! ### Recommended Column Types
+//!
+//! | Feature      | Address Column Type | U256 Column Type |
+//! |--------------|--------------------|------------------|
+//! | `sqlx`       | BINARY(20)         | BINARY(32)       |
+//! | `sqlx_str`   | VARCHAR(42)        | VARCHAR(66)      |
+//!
+//! For PostgreSQL, use `BYTEA` for binary mode, `TEXT` for string mode.
+//! For MySQL/SQLite, use `BINARY`/`VARCHAR` as above.
+//!
+//! ### Feature Flags
+//!
+//! - `sqlx`/`sqlx_binary`: Binary DB column support (default for most users)
+//! - `sqlx_str`: String DB column support (for legacy/multi-language DBs)
+//! - `serde`: JSON serialization
+//! - `sqlx_full`: `sqlx` + `serde`
+//! - `sqlx_str_full`: `sqlx_str` + `serde`
+//!
+//! **Do not enable both `sqlx` and `sqlx_str` at the same time!**
 //!
 //! ## Why SQLx?
 //!
@@ -181,6 +205,13 @@ pub use sql_u256::{SqlU256, U256};
 
 #[cfg(feature = "sqlx")]
 pub mod sqlx;
+
+#[cfg(all(feature = "sqlx_str", not(feature = "sqlx_binary")))]
+pub mod sqlx_str;
+
+#[cfg(all(feature = "sqlx_str", feature = "sqlx_binary"))]
+compile_error!("Features `sqlx_str` and `sqlx` are mutually exclusive. Please enable only one.");
+
 
 // Re-export alloy for macro usage
 #[doc(hidden)]

@@ -1,7 +1,10 @@
-/// Basic SQLite tests (in-memory database, no external services required)
-#[cfg(feature = "sqlx")]
+// #[cfg(feature = "sqlx_str")]
+// use std::str::FromStr;
+
+// Basic SQLite tests (in-memory database, no external services required)
+#[cfg(feature = "sqlx_str")]
 mod sqlite_tests {
-    use ethereum_mysql::{SqlU256, U256};
+    use ethereum_mysql::{SqlU256,U256};
     use sqlx::{Row, SqlitePool};
 
     #[tokio::test]
@@ -18,7 +21,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_balances (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                amount BINARY(32) NOT NULL,
+                amount VARCHAR(66) NOT NULL,
                 description TEXT
             )",
         )
@@ -65,7 +68,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE test_balances (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                amount BINARY(32) NOT NULL,
+                amount VARCHAR(66) NOT NULL,
                 description TEXT
             )",
         )
@@ -127,7 +130,7 @@ mod sqlite_tests {
         sqlx::query(
             "CREATE TABLE user_balances (
                 user_id INTEGER,
-                balance BINARY(32) NOT NULL,
+                balance VARCHAR(66) NOT NULL,
                 is_vip BOOLEAN DEFAULT FALSE
             )",
         )
@@ -201,7 +204,7 @@ mod sqlite_tests {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 from_address BINARY(20) NOT NULL,
                 to_address BINARY(20) NOT NULL,
-                amount BINARY(32) NOT NULL,
+                amount VARCHAR(66) NOT NULL,
                 transaction_type TEXT
             )",
         )
@@ -264,9 +267,9 @@ mod sqlite_tests {
 }
 
 // MySQL integration tests (requires running MySQL server)
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "sqlx_str")]
 mod mysql_tests {
-    use ethereum_mysql::{SqlU256, U256};
+    use ethereum_mysql::{SqlU256,U256};
     use sqlx::{MySqlPool, Row};
 
     // Helper function: setup MySQL connection and test table
@@ -286,7 +289,7 @@ mod mysql_tests {
                 if sqlx::query(&format!(
                     "CREATE TABLE IF NOT EXISTS {} (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        amount BINARY(32) NOT NULL,
+                        amount VARCHAR(66) NOT NULL,
                         description VARCHAR(255),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )",
@@ -426,9 +429,9 @@ mod mysql_tests {
 }
 
 // PostgreSQL integration tests (requires running PostgreSQL server)
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "sqlx_str")]
 mod postgres_tests {
-    use ethereum_mysql::{SqlU256, U256};
+    use ethereum_mysql::{SqlU256,U256};
     use sqlx::{PgPool, Row};
 
     // Helper function: setup PostgreSQL connection and test table
@@ -449,7 +452,7 @@ mod postgres_tests {
                 if sqlx::query(&format!(
                     "CREATE TABLE {} (
                         id SERIAL PRIMARY KEY,
-                        amount BYTEA NOT NULL,
+                        amount VARCHAR(66) NOT NULL,
                         description VARCHAR(255),
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                     )",
@@ -583,7 +586,7 @@ mod postgres_tests {
         sqlx::query(&format!(
             "CREATE TABLE {} (
                 user_id INTEGER,
-                balance BYTEA NOT NULL,
+                balance VARCHAR(66) NOT NULL,
                 token_name VARCHAR(255),
                 last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )",
@@ -641,5 +644,68 @@ mod postgres_tests {
         assert_eq!(user1_count, 2); // User 1 has 2 token balances
 
         println!("✅ PostgreSQL advanced U256 queries test passed");
+    }
+}
+
+#[cfg(feature = "sqlx_str")]
+mod format_consistency_tests {
+    use ethereum_mysql::{SqlU256,U256};
+    use std::str::FromStr;
+
+    #[test]
+    fn test_u256_format_consistency() {
+        println!("=== U256 format consistency test ===");
+
+        let test_values = [
+            U256::ZERO,
+            U256::from(1_u64),
+            U256::from(255_u64),
+            U256::from(0xdeadbeef_u64),
+            U256::from(123456789_u64),
+            U256::MAX,
+        ];
+
+        for value in test_values {
+            let sql_u256 = SqlU256::from(value);
+            let formatted = format!("{}", sql_u256);
+            let parsed_back = SqlU256::from_str(&formatted).unwrap();
+
+            assert_eq!(sql_u256, parsed_back);
+            assert!(formatted.starts_with("0x"));
+            assert!(formatted.len() >= 3);
+            assert!(formatted.len() <= 66);
+
+            println!("✅ {} -> {} -> {} (consistent)", value, formatted, parsed_back);
+        }
+    }
+
+    #[test]
+    fn test_u256_backward_compatibility() {
+        println!("=== U256 backward compatibility test ===");
+
+        // Test if old formats (decimal) that may exist in the database can be parsed
+        let compatibility_tests = [
+            ("0", U256::ZERO),
+            ("1", U256::from(1_u64)),
+            ("255", U256::from(255_u64)),
+            ("123456789", U256::from(123456789_u64)),
+            ("0x0", U256::ZERO),
+            ("0x1", U256::from(1_u64)),
+            ("0xff", U256::from(255_u64)),
+            ("0x75bcd15", U256::from(123456789_u64)),
+        ];
+
+        for (input, expected_value) in compatibility_tests {
+            match SqlU256::from_str(input) {
+                Ok(parsed) => {
+                    assert_eq!(*parsed.inner(), expected_value);
+                    println!("✅ '{}' -> {} (expected: {})", input, parsed, expected_value);
+                }
+                Err(e) => {
+                    println!("❌ '{}' failed to parse: {:?}", input, e);
+                    panic!("Should be able to parse: {}", input);
+                }
+            }
+        }
     }
 }

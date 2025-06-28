@@ -1,6 +1,6 @@
 [package]
 name = "ethereum-mysql"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021" 
 description = "Ethereum types (Address, U256) wrapper for seamless SQL database integration with SQLx"
 license = "MIT OR Apache-2.0"
@@ -8,14 +8,16 @@ repository = "https://github.com/Rollp0x/ethereum-mysql"
 keywords = ["ethereum", "sql", "sqlx", "u256", "database"]
 categories = ["database", "web-programming", "cryptography"]
 readme = "README.md"
-rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["sqlx","serde"]
-sqlx = ["dep:sqlx-core","dep:thiserror"]
+sqlx_binary = ["dep:sqlx-core","dep:thiserror"]
+sqlx = ["sqlx_binary"]
+sqlx_str = ["dep:sqlx-core","dep:thiserror"]
 # Serialization support
 serde = ["dep:serde", "alloy/serde"]
-full = ["sqlx","serde"]
+# Common scenarios
+sqlx_full = ["sqlx", "serde"]
+sqlx_str_full = ["sqlx_str", "serde"]
 
 [dependencies]
 alloy = { version = "1.0.3", default-features = false }

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-06-28
+
+### ✨ Major New Features
+- **Dual database column type support**: Now supports both binary (BINARY/VARBINARY/BYTEA) and string (VARCHAR/CHAR/TEXT) column types for `SqlAddress` and `SqlU256`, controlled by feature flags.
+- **New mutually exclusive features**:
+  - `sqlx`/`sqlx_binary`: Enables binary column support (recommended for new projects)
+  - `sqlx_str`: Enables string column support (for legacy/multi-language DBs)
+  - **Compile error if both enabled**: These features are now mutually exclusive to prevent trait conflicts and schema ambiguity.
+- **Feature combos**: Added `sqlx_full` and `sqlx_str_full` for convenient all-in-one feature enabling.
+- **Comprehensive documentation**: Updated README and crate docs to clearly explain feature usage, recommended column types, and best practices for each mode.
+- **Test coverage**: Added/updated integration tests for both binary and string modes across SQLite, MySQL, and PostgreSQL.
+- **CI/automation**: Provided shell/CI scripts and guidance for testing all valid feature combinations.
+
+### 🛠️ Improvements & Fixes
+- **Error handling**: Improved error messages and trait gating for invalid feature combinations.
+- **Examples**: All examples now work with both binary and string modes, with clear feature requirements in docs.
+- **Internationalization**: All comments and test docs now in English for global accessibility.
+- **Manifest cleanup**: Removed unused manifest keys and improved feature flag structure in `Cargo.toml`.
+
+### ⚠️ Migration Notes
+- **No breaking changes** for users who follow the new feature flag guidance.
+- **Users must choose either binary or string mode** for database integration; do not enable both at once.
+- **See README for migration and best practice details.**
+
 ## [2.0.0] - 2025-06-27
 
 ### Breaking Changes
