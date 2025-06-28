@@ -46,6 +46,13 @@ This crate provides SQL-compatible wrappers for Ethereum types (`SqlAddress`, `S
 - For PostgreSQL, use `BYTEA` for binary mode, `TEXT` for string mode.
 - For MySQL/SQLite, use `BINARY`/`VARCHAR` as above.
 
+### U256 string encoding/decoding notes:
+- When using string mode (`sqlx_str`), U256 values are always written to the database as lowercase hex strings with a `0x` prefix (e.g. `0x1234...`).
+- When reading from the database, both `0x`-prefixed hex strings and pure decimal strings are supported.
+- For best compatibility and predictable sorting/comparison, always store U256 as hex strings in the database.
+- If you store decimal strings, reading is supported, but database-level comparison/sorting may not match Rust-side logic.
+
+
 ### Feature Matrix
 
 - `sqlx`/`sqlx_binary`: Binary DB column support (default for most users)

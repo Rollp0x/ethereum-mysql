@@ -5,6 +5,12 @@
 //!
 //! **Note:** The recommended database column type is `VARCHAR(42)` or `CHAR(42)` (MySQL/SQLite) for addresses,
 //! and `VARCHAR(66)` or `TEXT` for U256 values. This is suitable for cross-language and legacy database integration.
+//! 
+//! **U256 string encoding/decoding notes:**
+//! - When writing to the database, U256 is always encoded as a lowercase hex string with `0x` prefix (e.g. `0x1234...`).
+//! - When reading from the database, both `0x`-prefixed hex strings and pure decimal strings are supported.
+//! - For best compatibility and predictable sorting/comparison, always store U256 as hex strings in the database.
+//! - If you store decimal strings, reading is supported, but database-level comparison/sorting may not match Rust-side logic.
 #![cfg(feature = "sqlx_str")]
 #![cfg_attr(docsrs, doc(cfg(feature = "sqlx_str")))]
 
