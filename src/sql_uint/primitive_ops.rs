@@ -4,8 +4,7 @@
 //! primitive integer types, supporting both directions (e.g., `value * 2` and `2 * value`).
 //! This eliminates the need for explicit conversions like `value * SqlU256::from(2)`.
 
-use super::SqlU256;
-use alloy::primitives::U256;
+use super::{SqlU256,U256};
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 /// Macro to implement arithmetic operations between SqlU256 and primitive types in both directions
@@ -16,7 +15,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn add(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 + U256::from(rhs))
+                SqlU256::from(self.0 + U256::from(rhs))
             }
         }
 
@@ -24,7 +23,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn sub(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 - U256::from(rhs))
+                SqlU256::from(self.0 - U256::from(rhs))
             }
         }
 
@@ -32,7 +31,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn mul(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 * U256::from(rhs))
+                SqlU256::from(self.0 * U256::from(rhs))
             }
         }
 
@@ -40,7 +39,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn div(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 / U256::from(rhs))
+                SqlU256::from(self.0 / U256::from(rhs))
             }
         }
 
@@ -48,7 +47,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn rem(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 % U256::from(rhs))
+                SqlU256::from(self.0 % U256::from(rhs))
             }
         }
 
@@ -57,7 +56,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn add(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(U256::from(self) + rhs.0)
+                SqlU256::from(U256::from(self) + rhs.0)
             }
         }
 
@@ -65,7 +64,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn sub(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(U256::from(self) - rhs.0)
+                SqlU256::from(U256::from(self) - rhs.0)
             }
         }
 
@@ -73,7 +72,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn mul(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(U256::from(self) * rhs.0)
+                SqlU256::from(U256::from(self) * rhs.0)
             }
         }
 
@@ -81,7 +80,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn div(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(U256::from(self) / rhs.0)
+                SqlU256::from(U256::from(self) / rhs.0)
             }
         }
 
@@ -89,7 +88,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn rem(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(U256::from(self) % rhs.0)
+                SqlU256::from(U256::from(self) % rhs.0)
             }
         }
 
@@ -98,7 +97,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn add(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 + U256::from(*rhs))
+                SqlU256::from(self.0 + U256::from(*rhs))
             }
         }
 
@@ -106,7 +105,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn sub(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 - U256::from(*rhs))
+                SqlU256::from(self.0 - U256::from(*rhs))
             }
         }
 
@@ -114,7 +113,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn mul(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 * U256::from(*rhs))
+                SqlU256::from(self.0 * U256::from(*rhs))
             }
         }
 
@@ -122,7 +121,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn div(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 / U256::from(*rhs))
+                SqlU256::from(self.0 / U256::from(*rhs))
             }
         }
 
@@ -130,7 +129,7 @@ macro_rules! impl_primitive_ops {
             type Output = Self;
 
             fn rem(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 % U256::from(*rhs))
+                SqlU256::from(self.0 % U256::from(*rhs))
             }
         }
 
@@ -139,7 +138,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn add(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 + U256::from(rhs))
+                SqlU256::from(self.0 + U256::from(rhs))
             }
         }
 
@@ -147,7 +146,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn sub(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 - U256::from(rhs))
+                SqlU256::from(self.0 - U256::from(rhs))
             }
         }
 
@@ -155,7 +154,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn mul(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 * U256::from(rhs))
+                SqlU256::from(self.0 * U256::from(rhs))
             }
         }
 
@@ -163,7 +162,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn div(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 / U256::from(rhs))
+                SqlU256::from(self.0 / U256::from(rhs))
             }
         }
 
@@ -171,7 +170,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn rem(self, rhs: $prim_type) -> Self::Output {
-                SqlU256(self.0 % U256::from(rhs))
+                SqlU256::from(self.0 % U256::from(rhs))
             }
         }
 
@@ -180,7 +179,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn add(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 + U256::from(*rhs))
+                SqlU256::from(self.0 + U256::from(*rhs))
             }
         }
 
@@ -188,7 +187,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn sub(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 - U256::from(*rhs))
+                SqlU256::from(self.0 - U256::from(*rhs))
             }
         }
 
@@ -196,7 +195,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn mul(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 * U256::from(*rhs))
+                SqlU256::from(self.0 * U256::from(*rhs))
             }
         }
 
@@ -204,7 +203,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn div(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 / U256::from(*rhs))
+                SqlU256::from(self.0 / U256::from(*rhs))
             }
         }
 
@@ -212,7 +211,7 @@ macro_rules! impl_primitive_ops {
             type Output = SqlU256;
 
             fn rem(self, rhs: &$prim_type) -> Self::Output {
-                SqlU256(self.0 % U256::from(*rhs))
+                SqlU256::from(self.0 % U256::from(*rhs))
             }
         }
     };
@@ -236,9 +235,9 @@ macro_rules! impl_signed_ops {
 
             fn add(self, rhs: $prim_type) -> Self::Output {
                 if rhs >= 0 {
-                    SqlU256(self.0 + U256::from(rhs as u64))
+                    SqlU256::from(self.0 + U256::from(rhs as u64))
                 } else {
-                    SqlU256(self.0 - U256::from((-rhs) as u64))
+                    SqlU256::from(self.0 - U256::from((-rhs) as u64))
                 }
             }
         }
@@ -248,9 +247,9 @@ macro_rules! impl_signed_ops {
 
             fn sub(self, rhs: $prim_type) -> Self::Output {
                 if rhs >= 0 {
-                    SqlU256(self.0 - U256::from(rhs as u64))
+                    SqlU256::from(self.0 - U256::from(rhs as u64))
                 } else {
-                    SqlU256(self.0 + U256::from((-rhs) as u64))
+                    SqlU256::from(self.0 + U256::from((-rhs) as u64))
                 }
             }
         }
@@ -260,7 +259,7 @@ macro_rules! impl_signed_ops {
 
             fn mul(self, rhs: $prim_type) -> Self::Output {
                 if rhs >= 0 {
-                    SqlU256(self.0 * U256::from(rhs as u64))
+                    SqlU256::from(self.0 * U256::from(rhs as u64))
                 } else {
                     // For negative multiplication, we'd need to handle the sign,
                     // but since SqlU256 is unsigned, we panic to avoid confusion
@@ -274,7 +273,7 @@ macro_rules! impl_signed_ops {
 
             fn div(self, rhs: $prim_type) -> Self::Output {
                 if rhs > 0 {
-                    SqlU256(self.0 / U256::from(rhs as u64))
+                    SqlU256::from(self.0 / U256::from(rhs as u64))
                 } else if rhs == 0 {
                     panic!("attempt to divide by zero")
                 } else {
@@ -289,10 +288,10 @@ macro_rules! impl_signed_ops {
 
             fn add(self, rhs: SqlU256) -> Self::Output {
                 if self >= 0 {
-                    SqlU256(U256::from(self as u64) + rhs.0)
+                    SqlU256::from(U256::from(self as u64) + rhs.0)
                 } else {
                     if rhs.0 >= U256::from((-self) as u64) {
-                        SqlU256(rhs.0 - U256::from((-self) as u64))
+                        SqlU256::from(rhs.0 - U256::from((-self) as u64))
                     } else {
                         panic!("Cannot subtract larger value from smaller in unsigned context")
                     }
@@ -305,7 +304,7 @@ macro_rules! impl_signed_ops {
 
             fn mul(self, rhs: SqlU256) -> Self::Output {
                 if self >= 0 {
-                    SqlU256(U256::from(self as u64) * rhs.0)
+                    SqlU256::from(U256::from(self as u64) * rhs.0)
                 } else {
                     panic!("Cannot multiply negative number by SqlU256")
                 }

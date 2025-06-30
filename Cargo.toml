@@ -10,14 +10,12 @@ categories = ["database", "web-programming", "cryptography"]
 readme = "README.md"
 
 [features]
-sqlx_binary = ["dep:sqlx-core","dep:thiserror"]
-sqlx = ["sqlx_binary"]
-sqlx_str = ["dep:sqlx-core","dep:thiserror"]
+default = ["full"]
+sqlx = ["dep:sqlx-core","dep:thiserror"]
 # Serialization support
 serde = ["dep:serde", "alloy/serde"]
 # Common scenarios
-sqlx_full = ["sqlx", "serde"]
-sqlx_str_full = ["sqlx_str", "serde"]
+full = ["sqlx", "serde"]
 
 [dependencies]
 alloy = { version = "1.0.3", default-features = false }

@@ -4,389 +4,145 @@
 [![Documentation](https://docs.rs/ethereum-mysql/badge.svg)](https://docs.rs/ethereum-mysql)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-Ethereum types wrapper for seamless SQLx database integration.
+**Design Purpose:**
 
-This crate provides SQL-compatible wrappers for Ethereum types (`SqlAddress`, `SqlU256`), specifically designed for the [SQLx](https://github.com/launchbadge/sqlx) async SQL toolkit. It supports multiple databases (MySQL, PostgreSQL, SQLite) through SQLx's feature system.
+`ethereum-mysql` is a pragmatic Rust library that provides type-safe, ergonomic wrappers for Ethereum types (Address, U256, FixedBytes, Bytes) for seamless integration with SQLx and relational databases (MySQL, PostgreSQL, SQLite). The crate is designed for real-world Web3/data engineering scenarios, focusing on:
 
-## Features
-
-- **Multi-database support**: MySQL, PostgreSQL, SQLite via SQLx
-- **Zero-cost abstractions**: Wraps `alloy::primitives` types (`Address`, `U256`)
-- **Complete type support**: `SqlAddress` for Ethereum addresses, `SqlU256` for large integers
-- **Arithmetic operations**: Full arithmetic support for `SqlU256` (+, -, *, /, %, bitwise, etc.)
-- **🆕 Primitive operations**: Direct arithmetic with Rust primitives (`value * 2`, `2 * value`)
-- **Type conversions**: Seamless conversion between `SqlU256` and Rust integer types
-- **Compile-time macros**: Create addresses at compile time with `sqladdress!`
-- **Constants**: Pre-defined useful constants like `SqlAddress::ZERO`, `SqlU256::ZERO`
-- **Serde support**: Optional JSON serialization with serde
-- **SQLx native**: Implements `sqlx::Type`, `sqlx::Encode`, and `sqlx::Decode`
-- **Pure Rust**: No C dependencies, works with SQLx's pure Rust philosophy
-- **Flexible database column type support**: Choose between binary and string column types for Ethereum Address and U256, controlled by feature flags
-
-## ⚡️ Flexible Database Column Type Support (Binary vs String)
-
-**ethereum-mysql** supports two mutually exclusive modes for database column types, controlled by Cargo features:
-
-- `sqlx` (or `sqlx_binary`): **Binary mode** (recommended for new projects)
-  - Use `BINARY(20)`/`BINARY(32)`/`BYTEA` columns for `SqlAddress`/`SqlU256`
-  - Fast, compact, and lossless
-- `sqlx_str`: **String mode** (for legacy or multi-language DBs)
-  - Use `VARCHAR(42)`/`VARCHAR(66)`/`TEXT` columns for `SqlAddress`/`SqlU256`
-  - Human-readable, compatible with systems that can't handle binary
-
-> **Note:** `sqlx`/`sqlx_binary` and `sqlx_str` **cannot be enabled at the same time**. Enabling both will result in a compile error. This ensures there is never a conflict in trait implementations or database column expectations.
-
-### Recommended Column Types
-
-| Feature      | Address Column Type | U256 Column Type |
-|--------------|--------------------|------------------|
-| `sqlx`       | BINARY(20)         | BINARY(32)       |
-| `sqlx_str`   | VARCHAR(42)        | VARCHAR(66)      |
-
-- For PostgreSQL, use `BYTEA` for binary mode, `TEXT` for string mode.
-- For MySQL/SQLite, use `BINARY`/`VARCHAR` as above.
-
-### U256 string encoding/decoding notes:
-- When using string mode (`sqlx_str`), U256 values are always written to the database as lowercase hex strings with a `0x` prefix (e.g. `0x1234...`).
-- When reading from the database, both `0x`-prefixed hex strings and pure decimal strings are supported.
-- For best compatibility and predictable sorting/comparison, always store U256 as hex strings in the database.
-- If you store decimal strings, reading is supported, but database-level comparison/sorting may not match Rust-side logic.
-
-
-### Feature Matrix
-
-- `sqlx`/`sqlx_binary`: Binary DB column support (default for most users)
-- `sqlx_str`: String DB column support (for legacy/multi-language DBs)
-- `serde`: JSON serialization
-- `sqlx_full`: `sqlx` + `serde`
-- `sqlx_str_full`: `sqlx_str` + `serde`
-
-**Do not enable both `sqlx` and `sqlx_str` at the same time!**
-
-#### Example `Cargo.toml` Usage
-
-```toml
-# Binary mode (recommended)
-ethereum-mysql = { version = "2.1.0", features = ["sqlx_full"] }
-
-# String mode (legacy/multi-language)
-ethereum-mysql = { version = "2.1.0", features = ["sqlx_str_full"] }
-```
+- **String-based storage:** All types are stored as human-readable hex strings (e.g. `0x...`) in the database, ensuring maximum compatibility and easy inspection.
+- **Type safety:** Compile-time and runtime validation for all Ethereum types, eliminating manual string parsing and validation in business logic.
+- **API ergonomics:** Direct arithmetic, comparison, and conversion with Rust primitives for U256, and compile-time address macros for zero-cost, safe usage.
+- **No binary mode:** Binary column support is intentionally omitted; for binary storage, use the official alloy types directly or wait for native support in your stack.
+- **Minimal, focused features:** Only the most practical and widely-used Ethereum types and operations are supported, with optional serde integration.
 
 ---
 
-## 🎯 Key Advantages
+## Features
 
-### 🛡️ **Automatic Type Safety & Validation**
-Unlike traditional approaches that require manual string validation, this library provides **compile-time and runtime type safety**:
+- **Multi-database support:** MySQL, PostgreSQL, SQLite via SQLx
+- **Zero-cost abstractions:** Wraps `alloy::primitives` types (`Address`, `U256`, `FixedBytes`, `Bytes`)
+- **Type-safe wrappers:** `SqlAddress`, `SqlU256`, `SqlFixedBytes`, `SqlBytes` for direct DB integration
+- **Arithmetic operations:** Full arithmetic and comparison for `SqlU256` (U256), including with Rust primitives
+- **Type conversions:** Seamless conversion between wrappers and Rust integer types
+- **Compile-time macros:** Create addresses at compile time with `sqladdress!`
+- **Constants:** Pre-defined constants like `SqlAddress::ZERO`, `SqlU256::ZERO`
+- **Serde support:** Optional JSON serialization with serde
+- **SQLx native:** Implements `sqlx_core::Type`, `sqlx_core::Encode`, and `sqlx_core::Decode` for all wrappers
+- **Pure Rust:** No C dependencies, async-first, production ready
+- **Common 32-byte types** `SqlHash` and `SqlTopicHash` are exported as type aliases for `SqlFixedBytes<32>`
 
-```rust
-// ❌ Traditional approach - error-prone manual validation
-#[derive(Deserialize)]
-struct OldRequest {
-    address: String,  // Could be invalid!
-    amount: String,   // Could be invalid!
-}
+## Database Column Types
 
-async fn old_handler(req: OldRequest) -> Result<(), Error> {
-    // 😰 Manual validation required every time
-    let addr = Address::from_str(&req.address)?;  // Runtime error possible
-    let amount = U256::from_str(&req.amount)?;    // Runtime error possible
-    // ... rest of logic
-}
+All types are stored as strings (hex with `0x` prefix) for maximum compatibility:
 
-// ✅ Our approach - automatic validation
-#[derive(Deserialize)]
-struct NewRequest {
-    address: SqlAddress,  // 🎯 Auto-validated during deserialization!
-    amount: SqlU256,      // 🎯 Auto-validated during deserialization!
-}
+| Type             | Recommended Column Type |
+|------------------|------------------------|
+| SqlAddress       | VARCHAR(42)            |
+| SqlU256          | VARCHAR(66)            |
+| SqlFixedBytes<N> | VARCHAR(2+2*N)         |
+| SqlBytes         | TEXT                   |
 
-async fn new_handler(req: NewRequest) -> Result<(), Error> {
-    // 🚀 If we reach here, ALL data is already validated!
-    // 🚀 Direct database operations without any conversion!
-    sqlx::query("INSERT INTO users (addr, balance) VALUES (?, ?)")
-        .bind(&req.address)  // Direct binding - no conversion needed
-        .bind(&req.amount)   // Direct binding - no conversion needed
-        .execute(&pool).await?;
-}
-```
+- For PostgreSQL, use `TEXT` for all string types.
+- For MySQL/SQLite, use `VARCHAR` as above.
 
-### ⚡ **Zero Conversion Overhead**
-Direct database integration without intermediate conversions:
+## U256 String Encoding
+- All U256/FixedBytes types are written as lowercase hex strings with `0x` prefix (e.g. `0x1234...`).
+- Reading supports both `0x`-prefixed hex and decimal strings (but hex is recommended for consistency).
+- For predictable sorting/comparison, always store as hex.
 
-```rust
-// ❌ Other libraries require conversion steps
-let addr_str: String = sqlx::query_scalar("SELECT address FROM users WHERE id = ?")
-    .bind(user_id).fetch_one(&pool).await?;
-let address = Address::from_str(&addr_str)?;  // Extra conversion step
+---
 
-// ✅ Our library - direct type retrieval
-let address: SqlAddress = sqlx::query_scalar("SELECT address FROM users WHERE id = ?")
-    .bind(user_id).fetch_one(&pool).await?;  // Direct, no conversion needed
-```
+## Key Advantages
 
-### 🔥 **Intuitive Primitive Operations**
-Revolutionary arithmetic operations with Rust primitives:
+### 🛡️ Type Safety & Validation
+All wrappers provide compile-time and runtime validation. No more manual string parsing or error-prone conversions in your business logic.
 
-```rust
-// ❌ Traditional approach - verbose conversions
-let fee_rate = U256::from(25);
-let base = U256::from(10000);
-let fee = (balance * fee_rate) / base;
+### ⚡ Zero Conversion Overhead
+Directly bind and retrieve types from SQLx queries—no intermediate conversions or manual parsing required.
 
-// ✅ Our approach - direct primitive arithmetic
-let fee = balance * 25 / 10000;  // Natural, intuitive syntax!
-let doubled = balance * 2;        // Works both ways
-let tripled = 3 * balance;        // Much cleaner code
-```
+### 🔥 Intuitive Arithmetic
+Direct arithmetic and comparison between `SqlU256` and Rust primitives, e.g. `balance * 25 / 10000`.
 
-### 🎯 **Bulletproof API Development**
-Build Web3 APIs with confidence - invalid data is rejected before reaching your business logic:
+### 🚀 API-Ready
+Request structs can use `SqlAddress`/`SqlU256` directly for automatic validation and type safety in web APIs.
 
-```rust
-// 🛡️ This struct definition provides automatic protection
-#[derive(Deserialize)]
-struct TransferRequest {
-    from: SqlAddress,     // Invalid addresses = HTTP 400 error automatically
-    to: SqlAddress,       // No manual validation code needed
-    amount: SqlU256,      // Supports both "123" and "0x7b" formats
-}
-
-// 🚀 Your handler focuses on business logic, not validation
-async fn transfer(Json(req): Json<TransferRequest>) -> Result<Response, Error> {
-    // All fields are guaranteed valid when we reach this point!
-    let balance: SqlU256 = get_balance(&req.from, &pool).await?;
-    if balance >= req.amount {
-        execute_transfer(&req.from, &req.to, &req.amount, &pool).await?;
-    }
-    Ok(success_response())
-}
-```
+---
 
 ## Quick Start
 Add to your `Cargo.toml`:
 
 ```toml
-# Basic usage default features
-ethereum-mysql = "2.1.0"
-
-# Enable sqlx feature
-ethereum-mysql = { version = "2.1.0",  features = ["sqlx_full"] }
-
-# Enable all features
-ethereum-mysql = { version = "2.0.0", features = ["sqlx_str_full"] }
+ethereum-mysql = "3.0.0"
 ```
 
-## Usage Examples
+---
 
-### Basic Address Creation
+## Example Usage
 
+### Address Creation
 ```rust
 use ethereum_mysql::{SqlAddress, sqladdress};
 use std::str::FromStr;
 
-// Use the zero address constant
 let zero = SqlAddress::ZERO;
-
-// Create from macro (compile-time validation)
 let addr = sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d");
-
-// Create from string (runtime parsing)
 let addr2 = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
-
-// Create constant addresses
 const ADMIN: SqlAddress = sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d");
 ```
 
-### Basic U256 Usage
-
+### U256 Usage
 ```rust
 use ethereum_mysql::SqlU256;
 use std::str::FromStr;
 
-// Create from various integer types
 let small = SqlU256::from(42u64);
 let large = SqlU256::from(u128::MAX);
-
-// Constants
 let zero = SqlU256::ZERO;
-
-// From strings (supports both decimal and hex)
 let from_decimal = SqlU256::from_str("123456789").unwrap();
 let from_hex = SqlU256::from_str("0x75bcd15").unwrap();
 assert_eq!(from_decimal, from_hex);
 
-// Arithmetic operations
 let a = SqlU256::from(100u64);
 let b = SqlU256::from(50u64);
-
-let sum = a + b;                    // 150
-let difference = a - b;             // 50  
-let product = a * b;                // 5000
-let quotient = a / b;               // 2
-let remainder = a % b;              // 0
-
-// 🆕 NEW: Direct primitive operations (no conversion needed!)
-let doubled = a * 2;                // SqlU256 * primitive
-let tripled = 3 * a;                // primitive * SqlU256  
-let fee = balance * 25 / 10000;     // 0.25% fee calculation
-let gas_cost = gas_price * 21000;   // Direct gas calculation
-
-// Advanced operations
-let power = a.pow(3);               // 100^3 = 1,000,000
-let square = a.square();            // 100^2 = 10,000
-let gcd = SqlU256::from(12u64).gcd(SqlU256::from(8u64)); // 4
-
-// Safe operations
-let checked_sum = a.checked_add(b); // Some(150)
-let saturated = a.saturating_sub(SqlU256::from(200u64)); // 0
-
-// 🆕 NEW: Comparison operations
-assert!(a > b);                     // 100 > 50
-assert!(b < a);                     // 50 < 100  
-assert!(a >= SqlU256::from(100u64)); // 100 >= 100
-assert!(zero < a);                  // 0 < 100
-
-// Min/max operations
-let min_val = a.min(b);             // 50
-let max_val = a.max(b);             // 100
-
-// Sorting collections
-let mut values = vec![
-    SqlU256::from(300u64),
-    SqlU256::from(100u64), 
-    SqlU256::ZERO,
-    SqlU256::from(200u64),
-];
-values.sort(); // [0, 100, 200, 300]
-
-// 🔄 Converting back to original types
-let sql_value = SqlU256::from(42u64);
-
-// Method 1: .inner() - Get reference to inner U256 (zero-cost)
-let u256_ref: &U256 = sql_value.inner();
-println!("Inner U256 reference: {:?}", u256_ref);
-
-// Method 2: .into() - Convert to owned U256 (always safe, no try needed!)
-let u256_owned: U256 = sql_value.into();
-println!("Owned U256: {:?}", u256_owned);
-
-// Method 3: Auto-deref (thanks to Deref trait)
-let u256_deref: U256 = *sql_value;  // Automatic dereference
-
-// 🔄 Converting to Rust primitive types (these need try_into)
-let back_to_u64: u64 = small.try_into().unwrap();
-let too_large = large.try_into::<u64>(); // Error - value too large for u64
-
-// Display format (always hex)
-println!("{}", a); // "0x64"
+let sum = a + b;
+let product = a * b;
+let doubled = a * 2;
+let tripled = 3 * a;
 ```
 
-### SQLx Database Integration (Binary Mode)
-
-> **Requires:** `features = ["sqlx", "sqlx_binary"]` or `features = ["sqlx_full"]`
-
+### SQLx Integration (String Mode)
 ```rust
-use ethereum_mysql::{SqlAddress, SqlU256};
+use ethereum_mysql::{SqlAddress, SqlU256, SqlHash};
 use sqlx::MySqlPool;
 use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let pool = MySqlPool::connect("mysql://user:pass@localhost/db").await?;
-    
-    // Insert address and balance directly - no manual conversion needed
     let user_address = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
-    let balance = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH in wei
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            wallet_address BINARY(20) NOT NULL,
-            balance BINARY(32),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )",
-    )
-    .execute(&pool)
-    .await?;
-    sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
-        .bind(&user_address)  // SqlAddress implements sqlx::Encode
-        .bind(&balance)       // SqlU256 implements sqlx::Encode
-        .execute(&pool)
-        .await?;
-    
-    // Query with arithmetic operations
-    let min_balance = SqlU256::from_str("500000000000000000").unwrap(); // 0.5 ETH in wei
-    let rows = sqlx::query("SELECT wallet_address, balance FROM users WHERE balance >= ?")
-        .bind(&min_balance)
-        .fetch_all(&pool)
-        .await?;
-    
-    for row in rows {
-        let address: SqlAddress = row.get("wallet_address"); // SqlAddress implements sqlx::Decode
-        let balance: SqlU256 = row.get("balance");           // SqlU256 implements sqlx::Decode
-        
-        // Perform arithmetic on retrieved values
-        let balance_in_eth = balance / SqlU256::from_str("1000000000000000000").unwrap();
-        println!("User {} has {} ETH", address, balance_in_eth);
-    }
-    
-    Ok(())
-}
-```
-
-### SQLx Database Integration (String Mode)
-
-> **Requires:** `features = ["sqlx_str"]` or `features = ["sqlx_str_full"]`
-
-```rust
-use ethereum_mysql::{SqlAddress, SqlU256};
-use sqlx::MySqlPool;
-use std::str::FromStr;
-
-#[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
-    let pool = MySqlPool::connect("mysql://user:pass@localhost/db").await?;
-    
-    // Insert address and balance as strings
-    let user_address = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
-    let balance = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH in wei
+    let balance = SqlU256::from_str("1000000000000000000").unwrap();
+    let tx_hash = SqlHash::from_str("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef").unwrap();
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             wallet_address VARCHAR(42) NOT NULL,
             balance VARCHAR(66),
+            tx_hash VARCHAR(66),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )",
     )
     .execute(&pool)
     .await?;
-    sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
-        .bind(&user_address)  // SqlAddress as string
-        .bind(&balance)       // SqlU256 as string
+    sqlx::query("INSERT INTO users (wallet_address, balance, tx_hash) VALUES (?, ?, ?)")
+        .bind(&user_address)
+        .bind(&balance)
+        .bind(&tx_hash)
         .execute(&pool)
         .await?;
-    
-    // Query with arithmetic operations
-    let min_balance = SqlU256::from_str("500000000000000000").unwrap(); // 0.5 ETH in wei
-    let rows = sqlx::query("SELECT wallet_address, balance FROM users WHERE balance >= ?")
-        .bind(&min_balance)
-        .fetch_all(&pool)
-        .await?;
-    
-    for row in rows {
-        let address: SqlAddress = row.get("wallet_address");
-        let balance: SqlU256 = row.get("balance");
-        let balance_in_eth = balance / SqlU256::from_str("1000000000000000000").unwrap();
-        println!("User {} has {} ETH", address, balance_in_eth);
-    }
-    
     Ok(())
 }
 ```
 
-### JSON Serialization (with serde feature)
-
+### JSON Serialization (with serde)
 ```rust
 use ethereum_mysql::{SqlAddress, SqlU256, sqladdress};
 use serde::{Serialize, Deserialize};
@@ -402,236 +158,21 @@ struct User {
 let user = User {
     id: 1,
     wallet: sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d"),
-    balance: SqlU256::from_str("1500000000000000000").unwrap(), // 1.5 ETH
-    staked_amount: Some(SqlU256::from_str("1000000000000000000").unwrap()), // 1 ETH
+    balance: SqlU256::from_str("1500000000000000000").unwrap(),
+    staked_amount: Some(SqlU256::from_str("1000000000000000000").unwrap()),
 };
-
 let json = serde_json::to_string(&user)?;
-// {
-//   "id": 1,
-//   "wallet": "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d",
-//   "balance": "0x14d1120d7b160000",
-//   "staked_amount": "0xde0b6b3a7640000"
-// }
-
-let parsed: User = serde_json::from_str(&json)?;
-
-// JSON input accepts both formats for SqlU256
-let json_with_decimal = r#"{
-    "id": 1,
-    "wallet": "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d", 
-    "balance": "1500000000000000000",
-    "staked_amount": "0xde0b6b3a7640000"
-}"#;
-let parsed_mixed: User = serde_json::from_str(json_with_decimal)?;
 ```
 
-### 🚀 Web3 API Integration (Type-Safe User Input)
-
-One of the biggest advantages of this library is automatic validation of user input in API endpoints. No more manual address validation or conversion errors!
-
-```rust
-use ethereum_mysql::{SqlAddress, SqlU256};
-use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
-
-// ✅ Request structs with automatic validation
-#[derive(Deserialize)]
-struct TransferRequest {
-    from: SqlAddress,     // 🎯 Auto-validates address format!
-    to: SqlAddress,       // 🎯 Invalid addresses are rejected before reaching your code
-    amount: SqlU256,      // 🎯 Supports both hex ("0x1a2b") and decimal ("123") input
-}
-
-#[derive(Deserialize)]
-struct StakeRequest {
-    user_wallet: SqlAddress,
-    stake_amount: SqlU256,
-    lock_period_days: u32,
-}
-
-#[derive(Serialize)]
-struct ApiResponse<T> {
-    success: bool,
-    data: Option<T>,
-    error: Option<String>,
-}
-
-// 🎯 API endpoint with zero manual validation needed
-async fn transfer_tokens(
-    pool: &MySqlPool,
-    req: TransferRequest  // All fields are already validated!
-) -> Result<ApiResponse<String>, Box<dyn std::error::Error>> {
-    
-    // 🚀 No validation needed - if we reach here, all inputs are valid!
-    // 🚀 Direct database operations without any conversion!
-    
-    // Check sender balance
-    let balance: SqlU256 = sqlx::query_scalar(
-        "SELECT balance FROM users WHERE wallet_address = ?"
-    )
-    .bind(&req.from)  // Direct use, no conversion!
-    .fetch_one(pool)
-    .await?;
-    
-    // Direct arithmetic with primitives
-    if balance < req.amount {
-        return Ok(ApiResponse {
-            success: false,
-            data: None,
-            error: Some("Insufficient balance".to_string()),
-        });
-    }
-    
-    // Calculate fee (0.1%)
-    let fee = req.amount * 1 / 1000;  // Direct primitive arithmetic!
-    let net_amount = req.amount - fee;
-    
-    // Execute transfer (single transaction)
-    let mut tx = pool.begin().await?;
-    
-    // Update sender balance
-    sqlx::query("UPDATE users SET balance = balance - ? WHERE wallet_address = ?")
-        .bind(&req.amount)  // Direct binding!
-        .bind(&req.from)
-        .execute(&mut *tx)
-        .await?;
-    
-    // Update receiver balance  
-    sqlx::query("UPDATE users SET balance = balance + ? WHERE wallet_address = ?")
-        .bind(&net_amount)  // Direct binding!
-        .bind(&req.to)
-        .execute(&mut *tx)
-        .await?;
-    
-    // Record transaction
-    sqlx::query(
-        "INSERT INTO transactions (from_addr, to_addr, amount, fee) VALUES (?, ?, ?, ?)"
-    )
-    .bind(&req.from)     // All direct bindings!
-    .bind(&req.to)       // No conversions needed!
-    .bind(&req.amount)
-    .bind(&fee)
-    .execute(&mut *tx)
-    .await?;
-    
-    tx.commit().await?;
-    
-    Ok(ApiResponse {
-        success: true,
-        data: Some("Transfer completed successfully".to_string()),
-        error: None,
-    })
-}
-
-// 🎯 Example JSON requests that work automatically:
-
-// ✅ Valid request - will be parsed successfully
-let valid_json = r#"{
-    "from": "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d",
-    "to": "0x8ba1f109551bD432803012645Hac136c82C2c1",  
-    "amount": "1000000000000000000"
-}"#;
-
-// ❌ Invalid address - will be rejected during deserialization
-let invalid_json = r#"{
-    "from": "0xinvalid_address",
-    "to": "0x8ba1f109551bD432803012645Hac136c82C2c1",
-    "amount": "1000000000000000000"  
-}"#;
-
-// ✅ Hex amount format also works
-let hex_amount_json = r#"{
-    "from": "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d",
-    "to": "0x8ba1f109551bD432803012645Hac136c82C2c1",
-    "amount": "0xde0b6b3a7640000"
-}"#;
-
-// 🎯 Integration with web frameworks (example with Axum)
-use axum::{extract::Json, response::Json as ResponseJson};
-
-async fn api_transfer(
-    pool: &MySqlPool,
-    Json(req): Json<TransferRequest>  // Automatic validation happens here!
-) -> Result<ResponseJson<ApiResponse<String>>, StatusCode> {
-    match transfer_tokens(pool, req).await {
-        Ok(response) => Ok(ResponseJson(response)),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
-}
-
-// 🎯 Benefits Summary:
-// ✅ Zero manual validation code needed
-// ✅ Invalid addresses rejected automatically  
-// ✅ Type-safe database operations
-// ✅ Direct arithmetic with primitives
-// ✅ Both hex and decimal input formats supported
-// ✅ Impossible to forget validation steps
-// ✅ Clean, readable business logic
-```
-
-## Database Schema Examples
-
-### MySQL
-
-```sql
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    wallet_address BINARY(20) NOT NULL,
-    balance BINARY(32) NOT NULL, 
-    token_amount BINARY(32) DEFAULT NULL,       -- Optional SqlU256 field
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_wallet (wallet_address),
-    INDEX idx_balance (balance)
-);
-
-```
-
-### Type Safety
-
-```rust
-// All these work seamlessly with the database
-let wei_amount = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH
-let gwei_price = SqlU256::from(20_000_000_000u64);                  // 20 Gwei
-let block_number = SqlU256::from(18_500_000u64);
-
-// Arithmetic operations work naturally
-let total_cost = wei_amount + (gwei_price * SqlU256::from(21000u64)); // gas calculation
-let next_block = block_number + SqlU256::from(1u64);
-
-// Database operations are type-safe
-sqlx::query("INSERT INTO transactions (amount, gas_price, block) VALUES (?, ?, ?)")
-    .bind(&wei_amount)    // Stored as "0xde0b6b3a7640000" 
-    .bind(&gwei_price)    // Stored as "0x4a817c800"
-    .bind(&block_number)  // Stored as "0x11a5140"
-    .execute(&pool).await?;
-```
-
-## Why SQLx?
-
-This library is built specifically for [SQLx](https://github.com/launchbadge/sqlx) because:
-
-- **Pure Rust**: No C dependencies or ORM overhead
-- **Compile-time safety**: SQL queries are checked at compile time
-- **Async-first**: Built for modern async Rust applications
-- **Multi-database**: Single API for multiple database backends
-- **Performance**: Zero-cost abstractions and prepared statements
-
-## Requirements
-
-- Rust 1.75+ (2024 edition)
-- sqlx_core 0.8+
-- alloy 1.0+
+---
 
 ## License
 
 Licensed under either of:
-
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
 - MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
-
 
 ## Contributing
 

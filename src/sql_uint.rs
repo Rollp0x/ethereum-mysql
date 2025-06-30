@@ -1,8 +1,10 @@
 pub use alloy::primitives::U256;
-#[cfg(feature = "serde")]
-use serde::Deserialize;
+pub use alloy::primitives::Uint;
 use std::ops::Deref;
 use std::str::FromStr;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 mod convert;
 mod operation;
@@ -50,30 +52,19 @@ mod primitive_ops;
 /// let back_to_u256: U256 = from_u64.into();  // SqlU256 -> U256 (always safe)
 /// let back_to_u64: u64 = from_u64.try_into().unwrap(); // SqlU256 -> u64 (may overflow)
 /// ```
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SqlU256(U256);
+pub struct SqlUint<const BITS: usize, const LIMBS: usize>(Uint<BITS, LIMBS>);
+/// A type alias for a 256-bit unsigned integer, commonly used for Ethereum values.
+pub type SqlU256 = SqlUint<256, 4>;
 
-impl SqlU256 {
-    /// The zero value constant.
-    ///
-    /// Equivalent to `SqlU256::from(0u64)` but available as a compile-time constant.
-    pub const ZERO: Self = SqlU256(U256::ZERO);
-
-    /// Creates a new `SqlU256` from a `U256` value.
+impl<const BITS: usize, const LIMBS: usize> SqlUint<BITS, LIMBS> {
+    /// Creates a new `SqlUint` from a `Uint` value.
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use ethereum_mysql::SqlU256;
-    /// use alloy::primitives::U256;
-    ///
-    /// let u256_val = U256::from(42u64);
-    /// let sql_u256 = SqlU256::new(u256_val);
-    /// ```
-    pub const fn new(value: U256) -> Self {
-        SqlU256(value)
-    }
+    /// Equivalent to `SqlU256::from(0u64)` but available as a compile-time constant.
+    pub const ZERO: Self = SqlUint(Uint::ZERO);
 
     /// Returns a reference to the inner `U256` value.
     ///
@@ -87,62 +78,77 @@ impl SqlU256 {
     /// let sql_u256 = SqlU256::from(42u64);
     /// let inner_ref: &alloy::primitives::U256 = sql_u256.inner();
     /// ```
-    pub fn inner(&self) -> &U256 {
+    pub fn inner(&self) -> &Uint<BITS, LIMBS> {
         &self.0
     }
 }
 
-impl AsRef<U256> for SqlU256 {
-    fn as_ref(&self) -> &U256 {
+impl<const BITS: usize, const LIMBS: usize> AsRef<Uint<BITS, LIMBS>> for SqlUint<BITS, LIMBS> {
+    fn as_ref(&self) -> &Uint<BITS, LIMBS> {
         &self.0
     }
 }
-impl Deref for SqlU256 {
-    type Target = U256;
+impl<const BITS: usize, const LIMBS: usize> Deref for SqlUint<BITS, LIMBS> {
+    type Target = Uint<BITS, LIMBS>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl From<U256> for SqlU256 {
-    fn from(value: U256) -> Self {
-        SqlU256(value)
+
+impl<const BITS: usize, const LIMBS: usize> From<Uint<BITS, LIMBS>> for SqlUint<BITS, LIMBS> {
+    fn from(value: Uint<BITS, LIMBS>) -> Self {
+        SqlUint(value)
     }
 }
 
-impl From<SqlU256> for U256 {
-    fn from(value: SqlU256) -> Self {
+impl<const BITS: usize, const LIMBS: usize> From<SqlUint<BITS, LIMBS>> for Uint<BITS, LIMBS> {
+    fn from(value: SqlUint<BITS, LIMBS>) -> Self {
         value.0
     }
 }
 
-impl FromStr for SqlU256 {
-    type Err = <U256 as FromStr>::Err;
+impl<const BITS: usize, const LIMBS: usize> FromStr for SqlUint<BITS, LIMBS> {
+    type Err = <Uint<BITS, LIMBS> as FromStr>::Err;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        U256::from_str(s).map(SqlU256)
+        Uint::from_str(s).map(SqlUint)
     }
 }
 
-impl std::fmt::Display for SqlU256 {
+impl<const BITS: usize, const LIMBS: usize> std::fmt::Display for SqlUint<BITS, LIMBS> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "0x{:x}", self.0)
     }
 }
-
-#[cfg(feature = "serde")]
-impl serde::Serialize for SqlU256 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.0.serialize(serializer)
+ 
+impl<const BITS: usize, const LIMBS: usize> std::fmt::LowerHex for SqlUint<BITS, LIMBS> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
+
+impl<const BITS: usize, const LIMBS: usize> std::fmt::UpperHex for SqlUint<BITS, LIMBS> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_serde() {
+        let value = "0x12345678";
+        let s_value = SqlUint::<32,1>::from_str(value).unwrap();
+        let json = serde_json::to_string(&s_value).unwrap();
+        assert_eq!(json, "\"0x12345678\"");
+        let de: SqlUint::<32,1> = serde_json::from_str(&json).unwrap();
+        assert_eq!(s_value, de);
+    }
+        
 
     #[test]
     fn test_creation_and_constants() {
@@ -150,8 +156,8 @@ mod tests {
         let zero = SqlU256::ZERO;
         assert_eq!(zero, SqlU256::from(0u64));
 
-        // Test new() constructor
-        let value = SqlU256::new(U256::from(42u64));
+        // Test from() constructor
+        let value = SqlU256::from(U256::from(42u64));
         assert_eq!(value, SqlU256::from(42u64));
     }
 
@@ -315,9 +321,8 @@ mod tests {
     fn test_debug_formatting() {
         let sql_u256 = SqlU256::from(42u64);
         let debug_str = format!("{:?}", sql_u256);
-
-        // Should contain the inner U256 value
-        assert!(debug_str.contains("SqlU256"));
+        // Should contain the inner SqlUint value
+        assert!(debug_str.contains("SqlUint"));
     }
 
     #[test]

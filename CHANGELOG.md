@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-06-30
+
+### 🚨 Breaking Changes & Major Refactor
+- **String-based storage only:** All binary mode support and related feature flags have been removed. The crate now exclusively supports string (hex) storage for all Ethereum types in SQLx-compatible databases.
+- **Simplified API:** All wrapper types (`SqlAddress`, `SqlU256`, `SqlFixedBytes`, `SqlBytes`) now only support string-based storage and SQLx integration. No more binary column support or feature flag complexity.
+- **Type aliases for hashes:** `SqlHash` and `SqlTopicHash` are now exported as type aliases for `SqlFixedBytes<32>`, making common 32-byte hash usage more ergonomic and explicit.
+- **Documentation overhaul:** README and crate docs rewritten in English, with a clear focus on string-based storage, type safety, and API ergonomics. All Chinese content removed.
+- **Test coverage:** Added robust unit and integration tests for all supported types and all three major backends (MySQL, PostgreSQL, SQLite), all using string storage.
+- **Serde support:** Optional serde integration remains for all wrappers, behind the `serde` feature flag.
+- **Versioning:** This release is not backward compatible with any previous version that used binary storage or feature flags for mode selection. Bump to 3.0.0 as a breaking change.
+
+### ⚠️ Migration Notes
+- **All users must migrate database columns to string (hex) types** (e.g. `VARCHAR`, `TEXT`) for all Ethereum types. See README for recommended column types.
+- **Remove all feature flags related to binary mode** from your `Cargo.toml` and build scripts.
+- **Update imports:** Use `SqlHash`/`SqlTopicHash` for 32-byte hashes and topics.
+- **See README for updated usage examples and migration guidance.**
+
+### ✨ Other Improvements
+- **Cleaner, minimal codebase:** All code and documentation now focus on real-world, type-safe, ergonomic, and string-based Ethereum type storage for SQLx.
+- **Better onboarding:** Usage examples and documentation are now more concise and practical for new users.
+
 ## [2.1.0] - 2025-06-28
 
 ### ✨ Major New Features

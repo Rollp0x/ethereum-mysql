@@ -1,8 +1,8 @@
 pub use alloy::primitives::Address;
+use std::str::FromStr;
+use std::ops::Deref;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
-use std::str::FromStr;
 
 /// SQL-compatible wrapper for Ethereum Address.
 ///
@@ -41,9 +41,7 @@ impl SqlAddress {
     /// or burn address in smart contracts. It's available at compile time.
     pub const ZERO: Self = SqlAddress(Address::ZERO);
 
-    /// Creates a new SqlAddress from an alloy Address.
-    ///
-    /// This is a const function that can be used in const contexts and static declarations.
+    /// Creates a new SqlAddress from an u8 array.
     ///
     /// # Examples
     ///
@@ -51,10 +49,26 @@ impl SqlAddress {
     /// use ethereum_mysql::SqlAddress;
     /// use alloy::primitives::Address;
     ///
-    /// const MY_ADDRESS: SqlAddress = SqlAddress::new(Address::ZERO);
+    /// let my_address: SqlAddress = SqlAddress::new([0u8; 20]);
     /// ```
-    pub const fn new(address: Address) -> Self {
-        SqlAddress(address)
+    pub fn new(bytes: [u8; 20]) -> Self {
+        SqlAddress(Address::new(bytes))
+    }
+
+    /// Creates a new SqlAddress from an alloy Address (const fn).
+    ///
+    /// This is a `const fn` and can be used in constant contexts, such as static/const variables or macros。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ethereum_mysql::SqlAddress;
+    /// use alloy::primitives::Address;
+    ///
+    /// const MY_ADDRESS: SqlAddress = SqlAddress::new_from_address(Address::ZERO);
+    /// ```
+    pub const fn new_from_address(addr: Address) -> Self {
+        SqlAddress(addr)
     }
 
     /// Returns the inner alloy Address.
@@ -69,12 +83,14 @@ impl SqlAddress {
     /// use alloy::primitives::Address;
     /// use std::str::FromStr;
     ///
-    /// let sql_addr = SqlAddress::new(Address::ZERO);
+    /// let sql_addr = SqlAddress::from(Address::ZERO);
     /// let inner: Address = sql_addr.inner();
     /// ```
     pub fn inner(&self) -> Address {
         self.0
     }
+
+    
 }
 
 impl AsRef<Address> for SqlAddress {
@@ -111,7 +127,7 @@ impl From<SqlAddress> for Address {
 }
 
 impl FromStr for SqlAddress {
-    type Err = alloy::primitives::AddressError;
+    type Err = <Address as FromStr>::Err;
 
     /// Parses a string into a SqlAddress.
     ///
@@ -127,9 +143,10 @@ impl FromStr for SqlAddress {
 impl std::fmt::Display for SqlAddress {
     /// Formats the address for display using EIP-55 checksum format.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+       self.0.fmt(f)
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -145,7 +162,7 @@ mod tests {
     fn test_sql_address_creation() {
         // Create from Address
         let addr = Address::ZERO;
-        let sql_addr = SqlAddress::new(addr);
+        let sql_addr = SqlAddress::from(addr);
         assert_eq!(sql_addr.inner(), addr);
 
         // Create from string
@@ -324,7 +341,7 @@ mod tests {
         let zero_from_str =
             SqlAddress::from_str("0x0000000000000000000000000000000000000000").unwrap();
         let zero_from_macro = sqladdress!("0x0000000000000000000000000000000000000000");
-        let zero_from_alloy = SqlAddress::new(Address::ZERO);
+        let zero_from_alloy = SqlAddress::ZERO;
 
         assert_eq!(SqlAddress::ZERO, zero_from_str);
         assert_eq!(SqlAddress::ZERO, zero_from_macro);

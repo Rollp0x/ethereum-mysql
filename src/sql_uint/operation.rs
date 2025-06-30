@@ -3,8 +3,7 @@
 //! This module provides arithmetic operations (+, -, *, /, %) and other mathematical
 //! operations for SqlU256, following Rust's standard library patterns.
 
-use super::SqlU256;
-use alloy::primitives::U256;
+use crate::{SqlU256,U256};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Not, Rem, Shl, Shr, Sub};
 
 /// Macro to implement binary arithmetic operations for all reference combinations
@@ -14,7 +13,7 @@ macro_rules! impl_binary_op {
             type Output = Self;
 
             fn $method(self, rhs: Self) -> Self::Output {
-                SqlU256(self.0 $op rhs.0)
+                SqlU256::from(self.0 $op rhs.0)
             }
         }
 
@@ -22,7 +21,7 @@ macro_rules! impl_binary_op {
             type Output = Self;
 
             fn $method(self, rhs: &Self) -> Self::Output {
-                SqlU256(self.0 $op rhs.0)
+                SqlU256::from(self.0 $op rhs.0)
             }
         }
 
@@ -30,7 +29,7 @@ macro_rules! impl_binary_op {
             type Output = SqlU256;
 
             fn $method(self, rhs: SqlU256) -> Self::Output {
-                SqlU256(self.0 $op rhs.0)
+                SqlU256::from(self.0 $op rhs.0)
             }
         }
 
@@ -38,7 +37,7 @@ macro_rules! impl_binary_op {
             type Output = SqlU256;
 
             fn $method(self, rhs: &SqlU256) -> Self::Output {
-                SqlU256(self.0 $op rhs.0)
+                SqlU256::from(self.0 $op rhs.0)
             }
         }
     };
@@ -51,7 +50,7 @@ macro_rules! impl_unary_op {
             type Output = Self;
 
             fn $method(self) -> Self::Output {
-                SqlU256($op self.0)
+                SqlU256::from($op self.0)
             }
         }
     };
@@ -64,7 +63,7 @@ macro_rules! impl_shift_op {
             type Output = Self;
 
             fn $method(self, rhs: $rhs) -> Self::Output {
-                SqlU256(self.0 $op rhs)
+                SqlU256::from(self.0 $op rhs)
             }
         }
     };
@@ -82,7 +81,7 @@ impl BitAnd for SqlU256 {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        SqlU256(self.0 & rhs.0)
+        SqlU256::from(self.0 & rhs.0)
     }
 }
 
@@ -90,7 +89,7 @@ impl BitOr for SqlU256 {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        SqlU256(self.0 | rhs.0)
+        SqlU256::from(self.0 | rhs.0)
     }
 }
 
@@ -98,7 +97,7 @@ impl BitXor for SqlU256 {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        SqlU256(self.0 ^ rhs.0)
+        SqlU256::from(self.0 ^ rhs.0)
     }
 }
 
@@ -118,7 +117,7 @@ impl SqlU256 {
 
     /// Returns the power of this value raised to the given exponent
     pub fn pow(self, exp: usize) -> Self {
-        SqlU256(self.0.pow(U256::from(exp)))
+        SqlU256::from(self.0.pow(U256::from(exp)))
     }
 
     /// Returns the greatest common divisor of two values
@@ -131,8 +130,8 @@ impl SqlU256 {
             b = a % b;
             a = temp;
         }
-
-        SqlU256(a)
+        // Convert U256 back to SqlU256
+        SqlU256::from(a)
     }
 
     /// Returns the least common multiple of two values
@@ -147,17 +146,17 @@ impl SqlU256 {
 
     /// Checked addition. Returns `None` if overflow occurred.
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(SqlU256)
+        self.0.checked_add(rhs.0).map(SqlU256::from)
     }
 
     /// Checked subtraction. Returns `None` if overflow occurred.
     pub fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(SqlU256)
+        self.0.checked_sub(rhs.0).map(SqlU256::from)
     }
 
     /// Checked multiplication. Returns `None` if overflow occurred.
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
-        self.0.checked_mul(rhs.0).map(SqlU256)
+        self.0.checked_mul(rhs.0).map(SqlU256::from)
     }
 
     /// Checked division. Returns `None` if `rhs == 0`.
@@ -165,23 +164,23 @@ impl SqlU256 {
         if rhs.0.is_zero() {
             None
         } else {
-            Some(SqlU256(self.0 / rhs.0))
+            Some(SqlU256::from(self.0 / rhs.0))
         }
     }
 
     /// Saturating addition. Clamps the result to `U256::MAX` if overflow occurred.
     pub fn saturating_add(self, rhs: Self) -> Self {
-        SqlU256(self.0.saturating_add(rhs.0))
+        SqlU256::from(self.0.saturating_add(rhs.0))
     }
 
     /// Saturating subtraction. Clamps the result to `0` if underflow occurred.
     pub fn saturating_sub(self, rhs: Self) -> Self {
-        SqlU256(self.0.saturating_sub(rhs.0))
+        SqlU256::from(self.0.saturating_sub(rhs.0))
     }
 
     /// Saturating multiplication. Clamps the result to `U256::MAX` if overflow occurred.
     pub fn saturating_mul(self, rhs: Self) -> Self {
-        SqlU256(self.0.saturating_mul(rhs.0))
+        SqlU256::from(self.0.saturating_mul(rhs.0))
     }
 
     /// Returns `true` if the value is zero
@@ -242,7 +241,7 @@ mod tests {
         assert_eq!(a & b, SqlU256::from(0b1000u64));
         assert_eq!(a | b, SqlU256::from(0b1110u64));
         assert_eq!(a ^ b, SqlU256::from(0b0110u64));
-        assert_eq!(!SqlU256::from(0u64), SqlU256(!U256::ZERO));
+        assert_eq!(!SqlU256::from(0u64), SqlU256::from(!U256::ZERO));
     }
 
     #[test]

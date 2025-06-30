@@ -3,8 +3,7 @@
 //! This module provides conversions from various integer types to SqlU256,
 //! following Rust's standard library patterns.
 
-use super::SqlU256;
-use alloy::primitives::U256;
+use crate::{SqlU256,U256};
 
 // Macro to reduce boilerplate for unsigned integer conversions
 macro_rules! impl_from_unsigned {
@@ -12,7 +11,7 @@ macro_rules! impl_from_unsigned {
         $(
             impl From<$t> for SqlU256 {
                 fn from(value: $t) -> Self {
-                    SqlU256(U256::from(value))
+                    SqlU256::from(U256::from(value))
                 }
             }
         )*
@@ -24,7 +23,7 @@ impl_from_unsigned!(u8, u16, u32, u64, u128);
 
 impl From<usize> for SqlU256 {
     fn from(value: usize) -> Self {
-        SqlU256(U256::from(value as u64))
+        SqlU256::from(U256::from(value as u64))
     }
 }
 
@@ -39,7 +38,7 @@ macro_rules! impl_try_from_signed {
                     if value < 0 {
                         Err("Cannot convert negative value to SqlU256")
                     } else {
-                        Ok(SqlU256(U256::from(value as $cast)))
+                        Ok(SqlU256::from(U256::from(value as $cast)))
                     }
                 }
             }
@@ -57,7 +56,7 @@ impl TryFrom<isize> for SqlU256 {
         if value < 0 {
             Err("Cannot convert negative value to SqlU256")
         } else {
-            Ok(SqlU256(U256::from(value as u64)))
+            Ok(SqlU256::from(U256::from(value as u64)))
         }
     }
 }
@@ -102,39 +101,39 @@ mod tests {
 
     #[test]
     fn test_from_unsigned_integers() {
-        assert_eq!(SqlU256::from(42u8), SqlU256(U256::from(42)));
-        assert_eq!(SqlU256::from(1000u16), SqlU256(U256::from(1000)));
-        assert_eq!(SqlU256::from(100000u32), SqlU256(U256::from(100000)));
+        assert_eq!(SqlU256::from(42u8), SqlU256::from(U256::from(42)));
+        assert_eq!(SqlU256::from(1000u16), SqlU256::from(U256::from(1000)));
+        assert_eq!(SqlU256::from(100000u32), SqlU256::from(U256::from(100000)));
         assert_eq!(
             SqlU256::from(10000000000u64),
-            SqlU256(U256::from(10000000000u64))
+            SqlU256::from(U256::from(10000000000u64))
         );
-        assert_eq!(SqlU256::from(u128::MAX), SqlU256(U256::from(u128::MAX)));
-        assert_eq!(SqlU256::from(123usize), SqlU256(U256::from(123)));
+        assert_eq!(SqlU256::from(u128::MAX), SqlU256::from(U256::from(u128::MAX)));
+        assert_eq!(SqlU256::from(123usize), SqlU256::from(U256::from(123)));
     }
 
     #[test]
     fn test_try_from_positive_signed_integers() {
-        assert_eq!(SqlU256::try_from(42i8).unwrap(), SqlU256(U256::from(42)));
+        assert_eq!(SqlU256::try_from(42i8).unwrap(), SqlU256::from(U256::from(42)));
         assert_eq!(
             SqlU256::try_from(1000i16).unwrap(),
-            SqlU256(U256::from(1000))
+            SqlU256::from(U256::from(1000))
         );
         assert_eq!(
             SqlU256::try_from(100000i32).unwrap(),
-            SqlU256(U256::from(100000))
+            SqlU256::from(U256::from(100000))
         );
         assert_eq!(
             SqlU256::try_from(10000000000i64).unwrap(),
-            SqlU256(U256::from(10000000000u64))
+            SqlU256::from(U256::from(10000000000u64))
         );
         assert_eq!(
             SqlU256::try_from(i128::MAX).unwrap(),
-            SqlU256(U256::from(i128::MAX as u128))
+            SqlU256::from(U256::from(i128::MAX as u128))
         );
         assert_eq!(
             SqlU256::try_from(123isize).unwrap(),
-            SqlU256(U256::from(123))
+            SqlU256::from(U256::from(123))
         );
     }
 
@@ -167,7 +166,7 @@ mod tests {
         assert_eq!(u64::try_from(large_value).unwrap(), u64::MAX);
 
         // Test very large value
-        let very_large = SqlU256(U256::from(u128::MAX));
+        let very_large = SqlU256::from(U256::from(u128::MAX));
         assert!(u64::try_from(very_large).is_err());
         assert_eq!(u128::try_from(very_large).unwrap(), u128::MAX);
     }
@@ -176,7 +175,7 @@ mod tests {
     fn test_conversion_chain() {
         // Test that we can chain conversions naturally
         let value: SqlU256 = 42u64.into();
-        assert_eq!(value, SqlU256(U256::from(42)));
+        assert_eq!(value, SqlU256::from(U256::from(42)));
 
         let back: u64 = value.try_into().unwrap();
         assert_eq!(back, 42u64);

@@ -29,6 +29,6 @@
 #[macro_export]
 macro_rules! sqladdress {
     ($s:expr) => {
-        $crate::SqlAddress::new($crate::alloy::primitives::address!($s))
+        $crate::SqlAddress::new_from_address($crate::alloy::primitives::address!($s))
     };
 }

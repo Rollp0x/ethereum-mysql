@@ -1,88 +1,50 @@
 //! # ethereum-mysql
 //!
-//! Ethereum types wrapper for seamless SQLx database integration.
+//! Type-safe, ergonomic wrappers for Ethereum types with seamless SQLx database integration.
 //!
-//! This crate provides SQL-compatible wrappers for Ethereum types (`SqlAddress`, `SqlU256`),
-//! specifically designed for the SQLx async SQL toolkit. It supports multiple databases
-//! (MySQL, PostgreSQL, SQLite) through SQLx's feature system.
+//! This crate provides SQL-compatible wrappers for common Ethereum types (`Address`, `U256`, `FixedBytes`, `Bytes`),
+//! designed for use with the async SQLx toolkit and relational databases (MySQL, PostgreSQL, SQLite).
 //!
-//! ## Types
+//! ## Supported Types
 //!
-//! - **`SqlAddress`**: Wraps `alloy::primitives::Address` for Ethereum addresses
-//! - **`SqlU256`**: Wraps `alloy::primitives::U256` for 256-bit unsigned integers with full arithmetic support
+//! - **SqlAddress**: Type-safe wrapper for `alloy::primitives::Address` (Ethereum address)
+//! - **SqlU256**: Wrapper for `alloy::primitives::U256` (256-bit unsigned integer) with full arithmetic and conversion support
+//! - **SqlFixedBytes<N>**: Generic wrapper for fixed-size byte arrays (e.g. hashes, topics)
+//!   - **SqlHash**/**SqlTopicHash**: Type aliases for `SqlFixedBytes<32>` (commonly used for hashes/topics)
+//! - **SqlBytes**: Wrapper for dynamic-length byte arrays
+//!
+//! ## Design Highlights
+//!
+//! - **String-based storage only**: All types are stored as lowercase hex strings (with `0x` prefix) in the database for maximum compatibility and easy inspection.
+//! - **Type safety**: Compile-time and runtime validation for all Ethereum types, eliminating manual string parsing and validation in business logic.
+//! - **API ergonomics**: Direct arithmetic, comparison, and conversion with Rust primitives for U256, and compile-time address macros for zero-cost, safe usage.
+//! - **No binary mode**: Binary column support and related feature flags have been removed for simplicity and reliability.
+//! - **Minimal, focused API**: Only the most practical and widely-used Ethereum types and operations are supported, with optional serde integration.
 //!
 //! ## SQLx Integration
 //!
-//! This library is built specifically for [SQLx](https://github.com/launchbadge/sqlx),
-//! the async SQL toolkit for Rust. SQLx is a pure Rust library that provides compile-time
-//! checked queries and async database operations. This crate implements the necessary SQLx
-//! traits (`Type`, `Encode`, `Decode`) to provide seamless database integration without
-//! manual type conversion.
+//! This crate implements the necessary SQLx traits (`Type`, `Encode`, `Decode`) for all wrappers, enabling direct use in queries and result sets without manual conversion.
 //!
-//! **Note**: This library is designed specifically for SQLx. While it might work with other
-//! Rust database libraries, it has only been tested and optimized for SQLx.
-//!
-//! ## Features
-//!
-//! - **Multi-database support**: MySQL, PostgreSQL, SQLite via SQLx
-//! - **Zero-cost abstractions**: Wraps `alloy::primitives` types (`Address`, `U256`)
-//! - **Complete type support**: `SqlAddress` for Ethereum addresses, `SqlU256` for large integers
-//! - **Arithmetic operations**: Full arithmetic support for `SqlU256` (+, -, *, /, %, bitwise, etc.)
-//! - **Type conversions**: Seamless conversion between `SqlU256` and Rust integer types
+//! - **Multi-database support**: MySQL, PostgreSQL, SQLite (via SQLx)
+//! - **Serde support**: Optional JSON serialization for all wrappers (enable the `serde` feature)
+//! - **Constants**: Pre-defined constants like `SqlAddress::ZERO`, `SqlU256::ZERO`
 //! - **Compile-time macros**: Create addresses at compile time with `sqladdress!`
-//! - **Constants**: Pre-defined useful constants like `SqlAddress::ZERO`, `SqlU256::ZERO`
-//! - **Serde support**: Optional JSON serialization with serde
-//! - **SQLx native**: Implements `sqlx::Type`, `sqlx::Encode`, and `sqlx::Decode`
-//! - **Pure Rust**: No C dependencies, works with SQLx's pure Rust philosophy
 //!
-//! ## Database Column Type Modes
+//! ## Recommended Database Column Types
 //!
-//! This crate supports two mutually exclusive modes for database column types, controlled by Cargo features:
+//! | Type             | Recommended Column Type |
+//! |------------------|------------------------|
+//! | SqlAddress       | VARCHAR(42)            |
+//! | SqlU256          | VARCHAR(66)            |
+//! | SqlFixedBytes<N> | VARCHAR(2+2*N)         |
+//! | SqlBytes         | TEXT                   |
 //!
-//! - `sqlx` or `sqlx_binary`: **Binary mode** (recommended for new projects)
-//!   - Use `BINARY(20)`/`BINARY(32)`/`BYTEA` columns for `SqlAddress`/`SqlU256`
-//!   - Fast, compact, and lossless
-//! - `sqlx_str`: **String mode** (for legacy or multi-language DBs)
-//!   - Use `VARCHAR(42)`/`VARCHAR(66)`/`TEXT` columns for `SqlAddress`/`SqlU256`
-//!   - Human-readable, compatible with systems that can't handle binary
+//! For PostgreSQL, use `TEXT` for all string types. For MySQL/SQLite, use `VARCHAR` as above.
 //!
-//! > **Note:** `sqlx`/`sqlx_binary` and `sqlx_str` cannot be enabled at the same time. Enabling both will result in a compile error.
-//!
-//! ### Recommended Column Types
-//!
-//! | Feature      | Address Column Type | U256 Column Type |
-//! |--------------|--------------------|------------------|
-//! | `sqlx`       | BINARY(20)         | BINARY(32)       |
-//! | `sqlx_str`   | VARCHAR(42)        | VARCHAR(66)      |
-//!
-//! For PostgreSQL, use `BYTEA` for binary mode, `TEXT` for string mode.
-//! For MySQL/SQLite, use `BINARY`/`VARCHAR` as above.
-//!
-//! ### Feature Flags
-//!
-//! - `sqlx`/`sqlx_binary`: Binary DB column support (default for most users)
-//! - `sqlx_str`: String DB column support (for legacy/multi-language DBs)
-//! - `serde`: JSON serialization
-//! - `sqlx_full`: `sqlx` + `serde`
-//! - `sqlx_str_full`: `sqlx_str` + `serde`
-//!
-//! **Do not enable both `sqlx` and `sqlx_str` at the same time!**
-//!
-//! ## Why SQLx?
-//!
-//! SQLx is chosen as the target framework because:
-//! - **Pure Rust**: No C dependencies or ORM overhead
-//! - **Compile-time safety**: SQL queries are checked at compile time
-//! - **Async-first**: Built for modern async Rust applications
-//! - **Multi-database**: Single API for multiple database backends
-//! - **Performance**: Zero-cost abstractions and prepared statements
-//!
-//! ## Examples
-//!
-//! ### Basic Usage with SQLx
+//! ## Example Usage
 //!
 //! ```rust
-//! use ethereum_mysql::{SqlAddress, SqlU256, sqladdress};
+//! use ethereum_mysql::{SqlAddress, SqlU256, SqlHash, sqladdress};
 //! use std::str::FromStr;
 //!
 //! // Address usage
@@ -92,125 +54,34 @@
 //!
 //! // U256 usage with arithmetic
 //! let balance = SqlU256::from_str("1000000000000000000").unwrap(); // 1 ETH in wei
-//! let gas_price = SqlU256::from(20_000_000_000u64);                // 20 Gwei
-//! let gas_limit = 21000u64;  // Direct primitive value
+//! let doubled = balance * 2;
 //!
-//! // Arithmetic operations (NEW: Direct primitive operations!)
-//! let total_cost = gas_price * gas_limit;  // No need for SqlU256::from(gas_limit)!
-//! let doubled_balance = balance * 2;       // Direct multiplication with primitives
-//! let remaining = balance - total_cost;    // Clean arithmetic
-//!
-//! // Both directions work: primitive * SqlU256 and SqlU256 * primitive
-//! assert_eq!(2 * balance, balance * 2);
-//!
-//! // Type conversions
-//! let small_amount = SqlU256::from(42u64);
-//! let back_to_u64: u64 = small_amount.try_into().unwrap();
+//! // Hash usage
+//! let tx_hash = SqlHash::from_str("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef").unwrap();
+//! println!("Tx hash: {}", tx_hash);
 //! ```
 //!
-//! ### SQLx Database Usage
+//! ## Migration Notes
 //!
-//! ```rust,no_run
-//! # use ethereum_mysql::{SqlAddress, SqlU256};
-//! # use sqlx::Row;
-//! # use std::str::FromStr;
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! // MySQL example with SQLx
-//! # #[cfg(feature = "sqlx")]
-//! # {
-//! use sqlx::MySqlPool;
-//!
-//! let pool = MySqlPool::connect("mysql://user:pass@localhost/db").await?;
-//!
-//! // Insert both address and balance - no manual conversion needed
-//! let user_address = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").unwrap();
-//! let balance = SqlU256::from_str("1500000000000000000").unwrap(); // 1.5 ETH
-//!
-//! sqlx::query("INSERT INTO users (wallet_address, balance) VALUES (?, ?)")
-//!     .bind(&user_address)  // SqlAddress implements sqlx::Encode
-//!     .bind(&balance)       // SqlU256 implements sqlx::Encode  
-//!     .execute(&pool)
-//!     .await?;
-//!
-//! // Query with arithmetic operations
-//! let rows = sqlx::query("SELECT wallet_address, balance FROM users")
-//!     .fetch_all(&pool)
-//!     .await?;
-//!
-//! for row in rows {
-//!     let address: SqlAddress = row.get("wallet_address"); // SqlAddress implements sqlx::Decode
-//!     let balance: SqlU256 = row.get("balance");           // SqlU256 implements sqlx::Decode
-//!     println!("User {} has balance: {}", address, balance);
-//! }
-//! # }
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ### API Integration Example
-//!
-//! ```rust,no_run
-//! # use ethereum_mysql::{SqlAddress, SqlU256};
-//! # use std::str::FromStr;
-//! // Perfect for API endpoints - no type conversion needed
-//! async fn get_user_balance(wallet: SqlAddress) -> Result<SqlU256, String> {
-//!     // Use wallet directly in SQLx queries without conversion
-//!     // Also works with blockchain RPC calls via wallet.inner()
-//!     Ok(SqlU256::from_str("12345000000000000000").map_err(|e| format!("{:?}", e))?) // 12.345 ETH
-//! }
-//!
-//! // User input validation
-//! let user_input = "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d";
-//! match SqlAddress::from_str(user_input) {
-//!     Ok(address) => {
-//!         // Valid Ethereum address, can use directly
-//!         println!("Valid address: {}", address);
-//!     }
-//!     Err(_) => {
-//!         println!("Invalid Ethereum address format");
-//!     }
-//! }
-//! ```
-//! ```rust,no_run
-//! # use ethereum_mysql::SqlAddress;
-//! # use std::str::FromStr;
-//! // Perfect for API endpoints - no type conversion needed
-//! async fn get_user_balance(wallet: SqlAddress) -> Result<u64, Box<dyn std::error::Error>> {
-//!     // Use wallet directly in SQLx queries without conversion
-//!     // Also works with blockchain RPC calls via wallet.inner()
-//!     Ok(12345)
-//! }
-//!
-//! // User input validation
-//! let user_input = "0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d";
-//! match SqlAddress::from_str(user_input) {
-//!     Ok(address) => {
-//!         // Valid Ethereum address, can use directly
-//!         println!("Valid address: {}", address);
-//!     }
-//!     Err(_) => {
-//!         println!("Invalid Ethereum address format");
-//!     }
-//! }
-//! ```
+//! - All binary mode and related feature flags have been removed. Only string-based storage is supported.
+//! - Update your database schema to use string (hex) columns for all Ethereum types.
+//! - See README for more details and migration guidance.
 
 #![warn(missing_docs)]
-
-mod address;
+    
+mod sql_address;
 mod macros;
-mod sql_u256;
+mod sql_uint;
+mod sql_fixed_bytes;
+mod sql_bytes;
 
-pub use address::{Address, SqlAddress};
-pub use sql_u256::{SqlU256, U256};
+pub use sql_address::{Address, SqlAddress};
+pub use sql_uint::{SqlU256, U256,SqlUint};
+pub use sql_fixed_bytes::{SqlFixedBytes,FixedBytes,SqlHash,SqlTopicHash};
+pub use sql_bytes::{SqlBytes, Bytes};
 
 #[cfg(feature = "sqlx")]
 pub mod sqlx;
-
-#[cfg(all(feature = "sqlx_str", not(feature = "sqlx_binary")))]
-pub mod sqlx_str;
-
-#[cfg(all(feature = "sqlx_str", feature = "sqlx_binary"))]
-compile_error!("Features `sqlx_str` and `sqlx` are mutually exclusive. Please enable only one.");
 
 
 // Re-export alloy for macro usage
