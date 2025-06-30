@@ -5,13 +5,13 @@
 //!
 //! **Note:** The recommended database column type is `VARCHAR(42)` or `CHAR(42)` (MySQL/SQLite) for addresses,
 //! and `VARCHAR(66)` or `TEXT` for U256 values. This is suitable for cross-language and legacy database integration.
-//! 
+//!
 //! **U256 string encoding/decoding notes:**
 //! - When writing to the database, U256 is always encoded as a lowercase hex string with `0x` prefix (e.g. `0x1234...`).
 //! - When reading from the database, both `0x`-prefixed hex strings and pure decimal strings are supported.
 //! - For best compatibility and predictable sorting/comparison, always store U256 as hex strings in the database.
 //! - If you store decimal strings, reading is supported, but database-level comparison/sorting may not match Rust-side logic.
-//! 
+//!
 #![cfg_attr(docsrs, doc(cfg(feature = "sqlx")))]
 
 use std::str::FromStr;
@@ -48,7 +48,7 @@ pub enum DecodeError {
     BytesDecodeError(String),
 }
 
-use crate::{SqlAddress, SqlUint,SqlFixedBytes,SqlBytes};
+use crate::{SqlAddress, SqlBytes, SqlFixedBytes, SqlUint};
 
 // for SqlAddress
 impl<DB: Database> Type<DB> for SqlAddress
@@ -82,8 +82,7 @@ where
 {
     fn decode(value: <DB as Database>::ValueRef<'a>) -> Result<Self, BoxDynError> {
         let s = String::decode(value)?;
-        SqlAddress::from_str(&s)
-            .map_err(|_| DecodeError::AddressDecodeError(s).into())
+        SqlAddress::from_str(&s).map_err(|_| DecodeError::AddressDecodeError(s).into())
     }
 }
 
@@ -101,7 +100,8 @@ where
     }
 }
 
-impl<'a, const BITS: usize, const LIMBS: usize, DB: Database> Encode<'a, DB> for SqlUint<BITS, LIMBS>
+impl<'a, const BITS: usize, const LIMBS: usize, DB: Database> Encode<'a, DB>
+    for SqlUint<BITS, LIMBS>
 where
     String: Encode<'a, DB>,
 {
@@ -113,7 +113,8 @@ where
     }
 }
 
-impl<'a, const BITS: usize, const LIMBS: usize, DB: Database> Decode<'a, DB> for SqlUint<BITS, LIMBS>
+impl<'a, const BITS: usize, const LIMBS: usize, DB: Database> Decode<'a, DB>
+    for SqlUint<BITS, LIMBS>
 where
     String: Decode<'a, DB>,
 {
@@ -154,8 +155,7 @@ where
 {
     fn decode(value: <DB as Database>::ValueRef<'a>) -> Result<Self, BoxDynError> {
         let s = String::decode(value)?;
-        SqlFixedBytes::<32>::from_str(&s)
-            .map_err(|_| DecodeError::FixedBytesDecodeError(s).into())
+        SqlFixedBytes::<32>::from_str(&s).map_err(|_| DecodeError::FixedBytesDecodeError(s).into())
     }
 }
 
@@ -191,7 +191,6 @@ where
 {
     fn decode(value: <DB as Database>::ValueRef<'a>) -> Result<Self, BoxDynError> {
         let s = String::decode(value)?;
-        SqlBytes::from_str(&s)
-            .map_err(|e| DecodeError::BytesDecodeError(e.to_string()).into())
+        SqlBytes::from_str(&s).map_err(|e| DecodeError::BytesDecodeError(e.to_string()).into())
     }
 }

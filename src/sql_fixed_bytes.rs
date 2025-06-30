@@ -20,7 +20,6 @@ impl<const BYTES: usize> SqlFixedBytes<BYTES> {
         SqlFixedBytes(FixedBytes::new(bytes))
     }
 
-
     /// Returns a reference to the inner `FixedBytes<BYTES>`.
     pub fn inner(&self) -> &FixedBytes<BYTES> {
         &self.0
@@ -32,7 +31,7 @@ impl<const BYTES: usize> SqlFixedBytes<BYTES> {
     /// Creates a new `SqlFixedBytes` from a `FixedBytes<BYTES>`.
     pub const fn from_bytes(bytes: FixedBytes<BYTES>) -> Self {
         SqlFixedBytes(bytes)
-    }   
+    }
 }
 
 impl<const BYTES: usize> AsRef<FixedBytes<BYTES>> for SqlFixedBytes<BYTES> {
@@ -69,7 +68,7 @@ impl<const BYTES: usize> FromStr for SqlFixedBytes<BYTES> {
     }
 }
 
-impl<const BYTES: usize> std::fmt::Display for SqlFixedBytes<BYTES>  {
+impl<const BYTES: usize> std::fmt::Display for SqlFixedBytes<BYTES> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
     }
@@ -93,7 +92,7 @@ mod tests {
         let zero = SqlFixedBytes::<32>::ZERO;
         assert_eq!(zero.inner().as_slice(), &[0u8; 32]);
     }
- 
+
     #[test]
     fn test_as_ref_and_deref() {
         let hex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
@@ -133,9 +132,7 @@ mod tests {
     fn test_fixed_bytes_0() {
         let hex = "0x";
         let val = SqlFixedBytes::<0>::from_str(hex).unwrap();
-        assert_eq!(val.inner().as_slice(),  &[] as &[u8]);
+        assert_eq!(val.inner().as_slice(), &[] as &[u8]);
         assert_eq!(val.to_string(), hex);
     }
 }
-
-

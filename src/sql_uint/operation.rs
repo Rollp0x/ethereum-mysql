@@ -3,7 +3,7 @@
 //! This module provides arithmetic operations (+, -, *, /, %) and other mathematical
 //! operations for SqlU256, following Rust's standard library patterns.
 
-use crate::{SqlU256,U256};
+use crate::{SqlU256, U256};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Not, Rem, Shl, Shr, Sub};
 
 /// Macro to implement binary arithmetic operations for all reference combinations

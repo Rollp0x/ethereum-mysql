@@ -1,5 +1,5 @@
-pub use alloy::primitives::U256;
 pub use alloy::primitives::Uint;
+pub use alloy::primitives::U256;
 use std::ops::Deref;
 use std::str::FromStr;
 
@@ -121,7 +121,7 @@ impl<const BITS: usize, const LIMBS: usize> std::fmt::Display for SqlUint<BITS, 
         write!(f, "0x{:x}", self.0)
     }
 }
- 
+
 impl<const BITS: usize, const LIMBS: usize> std::fmt::LowerHex for SqlUint<BITS, LIMBS> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
@@ -134,21 +134,20 @@ impl<const BITS: usize, const LIMBS: usize> std::fmt::UpperHex for SqlUint<BITS,
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[cfg(feature = "serde")]
     #[test]
     fn test_serde() {
         let value = "0x12345678";
-        let s_value = SqlUint::<32,1>::from_str(value).unwrap();
+        let s_value = SqlUint::<32, 1>::from_str(value).unwrap();
         let json = serde_json::to_string(&s_value).unwrap();
         assert_eq!(json, "\"0x12345678\"");
-        let de: SqlUint::<32,1> = serde_json::from_str(&json).unwrap();
+        let de: SqlUint<32, 1> = serde_json::from_str(&json).unwrap();
         assert_eq!(s_value, de);
     }
-        
 
     #[test]
     fn test_creation_and_constants() {

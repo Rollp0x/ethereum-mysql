@@ -82,6 +82,7 @@ mod tests {
         assert_eq!(format!("{}", sql_bytes), "0x1234");
     }
 
+    #[cfg(feature = "serde")]
     #[test]
     fn test_serde() {
         let input = "0xa9059cbb00000000000000000000000042066a09b94e41e0263eee935177c2ecfff7fe11000000000000000000000000000000000000000000000002629f66e0c5300000";

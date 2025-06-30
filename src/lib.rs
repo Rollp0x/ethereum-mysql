@@ -68,21 +68,20 @@
 //! - See README for more details and migration guidance.
 
 #![warn(missing_docs)]
-    
-mod sql_address;
+
 mod macros;
-mod sql_uint;
-mod sql_fixed_bytes;
+mod sql_address;
 mod sql_bytes;
+mod sql_fixed_bytes;
+mod sql_uint;
 
 pub use sql_address::{Address, SqlAddress};
-pub use sql_uint::{SqlU256, U256,SqlUint};
-pub use sql_fixed_bytes::{SqlFixedBytes,FixedBytes,SqlHash,SqlTopicHash};
-pub use sql_bytes::{SqlBytes, Bytes};
+pub use sql_bytes::{Bytes, SqlBytes};
+pub use sql_fixed_bytes::{FixedBytes, SqlFixedBytes, SqlHash, SqlTopicHash};
+pub use sql_uint::{SqlU256, SqlUint, U256};
 
 #[cfg(feature = "sqlx")]
 pub mod sqlx;
-
 
 // Re-export alloy for macro usage
 #[doc(hidden)]

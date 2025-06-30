@@ -4,7 +4,7 @@
 //! primitive integer types, supporting both directions (e.g., `value * 2` and `2 * value`).
 //! This eliminates the need for explicit conversions like `value * SqlU256::from(2)`.
 
-use super::{SqlU256,U256};
+use super::{SqlU256, U256};
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 /// Macro to implement arithmetic operations between SqlU256 and primitive types in both directions

@@ -1,8 +1,8 @@
 pub use alloy::primitives::Address;
-use std::str::FromStr;
-use std::ops::Deref;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
+use std::str::FromStr;
 
 /// SQL-compatible wrapper for Ethereum Address.
 ///
@@ -89,8 +89,6 @@ impl SqlAddress {
     pub fn inner(&self) -> Address {
         self.0
     }
-
-    
 }
 
 impl AsRef<Address> for SqlAddress {
@@ -143,10 +141,9 @@ impl FromStr for SqlAddress {
 impl std::fmt::Display for SqlAddress {
     /// Formats the address for display using EIP-55 checksum format.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-       self.0.fmt(f)
+        self.0.fmt(f)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

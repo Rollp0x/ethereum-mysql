@@ -3,7 +3,7 @@
 //! This module provides conversions from various integer types to SqlU256,
 //! following Rust's standard library patterns.
 
-use crate::{SqlU256,U256};
+use crate::{SqlU256, U256};
 
 // Macro to reduce boilerplate for unsigned integer conversions
 macro_rules! impl_from_unsigned {
@@ -108,13 +108,19 @@ mod tests {
             SqlU256::from(10000000000u64),
             SqlU256::from(U256::from(10000000000u64))
         );
-        assert_eq!(SqlU256::from(u128::MAX), SqlU256::from(U256::from(u128::MAX)));
+        assert_eq!(
+            SqlU256::from(u128::MAX),
+            SqlU256::from(U256::from(u128::MAX))
+        );
         assert_eq!(SqlU256::from(123usize), SqlU256::from(U256::from(123)));
     }
 
     #[test]
     fn test_try_from_positive_signed_integers() {
-        assert_eq!(SqlU256::try_from(42i8).unwrap(), SqlU256::from(U256::from(42)));
+        assert_eq!(
+            SqlU256::try_from(42i8).unwrap(),
+            SqlU256::from(U256::from(42))
+        );
         assert_eq!(
             SqlU256::try_from(1000i16).unwrap(),
             SqlU256::from(U256::from(1000))
