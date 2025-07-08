@@ -145,6 +145,12 @@ impl std::fmt::Display for SqlAddress {
     }
 }
 
+impl Default for SqlAddress {
+    fn default() -> Self {
+        SqlAddress::ZERO
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

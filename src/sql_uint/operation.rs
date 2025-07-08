@@ -69,6 +69,29 @@ macro_rules! impl_shift_op {
     };
 }
 
+/// Macro to implement binary assignment operations (e.g., +=, -=, etc.)
+macro_rules! impl_binary_assign_op {
+    ($trait:ident, $method:ident, $op:tt) => {
+        impl $trait for SqlU256 {
+            fn $method(&mut self, rhs: Self) {
+                self.0 = self.0 $op rhs.0;
+            }
+        }
+        impl $trait<&SqlU256> for SqlU256 {
+            fn $method(&mut self, rhs: &Self) {
+                self.0 = self.0 $op rhs.0;
+            }
+        }
+    };
+}
+
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign, RemAssign};
+impl_binary_assign_op!(AddAssign, add_assign, +);
+impl_binary_assign_op!(SubAssign, sub_assign, -);
+impl_binary_assign_op!(MulAssign, mul_assign, *);
+impl_binary_assign_op!(DivAssign, div_assign, /);
+impl_binary_assign_op!(RemAssign, rem_assign, %);
+
 // Binary arithmetic operations
 impl_binary_op!(Add, add, +);
 impl_binary_op!(Sub, sub, -);

@@ -32,3 +32,30 @@ macro_rules! sqladdress {
         $crate::SqlAddress::new_from_address($crate::alloy::primitives::address!($s))
     };
 }
+
+/// Macro to create a SqlFixedBytes<32> from a hex string literal at compile time.
+///
+/// Usage:
+/// const HASH: SqlFixedBytes<32> = sqlhash!("0x...hex...");
+#[macro_export]
+macro_rules! sqlhash {
+    ($s:expr) => {
+        {
+            // Compile-time check via alloy's FixedBytes macro
+            $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!(32, $s))
+        }
+    };
+}
+
+/// Macro to create a SqlU256 from a literal (compile-time check, panics at compile time for negative values).
+///
+/// Usage:
+/// const A: SqlU256 = sqlu256!(100); // OK
+/// const B: SqlU256 = sqlu256!(-100); // Compile error
+#[macro_export]
+macro_rules! sqlu256 {
+    ($val:literal) => {{
+        const _: () = assert!($val >= 0, "SqlU256 cannot be negative at compile time");
+        $crate::SqlU256::from($val as u128)
+    }};
+}

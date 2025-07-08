@@ -32,6 +32,35 @@ impl<const BYTES: usize> SqlFixedBytes<BYTES> {
     pub const fn from_bytes(bytes: FixedBytes<BYTES>) -> Self {
         SqlFixedBytes(bytes)
     }
+
+    /// Attempts to interpret the fixed bytes as an Ethereum address (last 20 bytes).
+    /// Returns None if the length is not 32 or the prefix is not zeroed.
+    pub fn to_address(&self) -> Option<crate::SqlAddress> {
+        if BYTES == 32 {
+            let bytes = self.0.as_slice();
+            // Ethereum address is the last 20 bytes, prefix 12 bytes must be zero
+            if bytes[..12].iter().all(|&b| b == 0) {
+                let mut addr = [0u8; 20];
+                addr.copy_from_slice(&bytes[12..]);
+                return Some(crate::SqlAddress::new(addr));
+            }
+        }
+        None
+    }
+
+    /// Interprets the fixed bytes as a U256 (no check, always possible for 32 bytes).
+    pub fn to_u256(&self) -> crate::SqlU256 {
+        use crate::SqlU256;
+        use alloy::primitives::U256;
+        if BYTES == 32 {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(self.0.as_slice());
+            SqlU256::from(U256::from_be_bytes(arr))
+        } else {
+            // For non-32 bytes, fallback to zero
+            SqlU256::ZERO
+        }
+    }
 }
 
 impl<const BYTES: usize> AsRef<FixedBytes<BYTES>> for SqlFixedBytes<BYTES> {

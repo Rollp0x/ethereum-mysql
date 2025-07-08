@@ -81,6 +81,54 @@ impl<const BITS: usize, const LIMBS: usize> SqlUint<BITS, LIMBS> {
     pub fn inner(&self) -> &Uint<BITS, LIMBS> {
         &self.0
     }
+
+    /// Consumes self and returns the inner Uint value.
+    pub fn into_inner(self) -> Uint<BITS, LIMBS> {
+        self.0
+    }
+}
+
+impl SqlU256 {
+    /// Try to convert this value to u8. Returns Err if out of range.
+    pub fn as_u8(&self) -> Result<u8, &'static str> {
+        if self.0 > U256::from(u8::MAX) {
+            Err("SqlU256 value too large for u8")
+        } else {
+            Ok(self.0.to::<u8>())
+        }
+    }
+    /// Try to convert this value to u16. Returns Err if out of range.
+    pub fn as_u16(&self) -> Result<u16, &'static str> {
+        if self.0 > U256::from(u16::MAX) {
+            Err("SqlU256 value too large for u16")
+        } else {
+            Ok(self.0.to::<u16>())
+        }
+    }
+    /// Try to convert this value to u32. Returns Err if out of range.
+    pub fn as_u32(&self) -> Result<u32, &'static str> {
+        if self.0 > U256::from(u32::MAX) {
+            Err("SqlU256 value too large for u32")
+        } else {
+            Ok(self.0.to::<u32>())
+        }
+    }
+    /// Try to convert this value to u64. Returns Err if out of range.
+    pub fn as_u64(&self) -> Result<u64, &'static str> {
+        if self.0 > U256::from(u64::MAX) {
+            Err("SqlU256 value too large for u64")
+        } else {
+            Ok(self.0.to::<u64>())
+        }
+    }
+    /// Try to convert this value to u128. Returns Err if out of range.
+    pub fn as_u128(&self) -> Result<u128, &'static str> {
+        if self.0 > U256::from(u128::MAX) {
+            Err("SqlU256 value too large for u128")
+        } else {
+            Ok(self.0.to::<u128>())
+        }
+    }
 }
 
 impl<const BITS: usize, const LIMBS: usize> AsRef<Uint<BITS, LIMBS>> for SqlUint<BITS, LIMBS> {
@@ -133,6 +181,120 @@ impl<const BITS: usize, const LIMBS: usize> std::fmt::UpperHex for SqlUint<BITS,
         self.0.fmt(f)
     }
 }
+
+impl Default for SqlU256 {
+    fn default() -> Self {
+        SqlU256::ZERO
+    }
+}
+
+// Allow comparison between SqlU256 and primitive unsigned integer types
+impl PartialEq<u8> for crate::SqlU256 {
+    fn eq(&self, other: &u8) -> bool {
+        *self == crate::SqlU256::from(*other)
+    }
+}
+impl PartialEq<u16> for crate::SqlU256 {
+    fn eq(&self, other: &u16) -> bool {
+        *self == crate::SqlU256::from(*other)
+    }
+}
+impl PartialEq<u32> for crate::SqlU256 {
+    fn eq(&self, other: &u32) -> bool {
+        *self == crate::SqlU256::from(*other)
+    }
+}
+impl PartialEq<u64> for crate::SqlU256 {
+    fn eq(&self, other: &u64) -> bool {
+        *self == crate::SqlU256::from(*other)
+    }
+}
+impl PartialEq<u128> for crate::SqlU256 {
+    fn eq(&self, other: &u128) -> bool {
+        *self == crate::SqlU256::from(*other)
+    }
+}
+
+impl PartialOrd<u8> for crate::SqlU256 {
+    fn partial_cmp(&self, other: &u8) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&crate::SqlU256::from(*other))
+    }
+}
+impl PartialOrd<u16> for crate::SqlU256 {
+    fn partial_cmp(&self, other: &u16) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&crate::SqlU256::from(*other))
+    }
+}
+impl PartialOrd<u32> for crate::SqlU256 {
+    fn partial_cmp(&self, other: &u32) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&crate::SqlU256::from(*other))
+    }
+}
+impl PartialOrd<u64> for crate::SqlU256 {
+    fn partial_cmp(&self, other: &u64) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&crate::SqlU256::from(*other))
+    }
+}
+impl PartialOrd<u128> for crate::SqlU256 {
+    fn partial_cmp(&self, other: &u128) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&crate::SqlU256::from(*other))
+    }
+}
+
+// Allow reverse comparison: primitive unsigned integer types vs SqlU256
+impl PartialEq<crate::SqlU256> for u8 {
+    fn eq(&self, other: &crate::SqlU256) -> bool {
+        crate::SqlU256::from(*self) == *other
+    }
+}
+impl PartialEq<crate::SqlU256> for u16 {
+    fn eq(&self, other: &crate::SqlU256) -> bool {
+        crate::SqlU256::from(*self) == *other
+    }
+}
+impl PartialEq<crate::SqlU256> for u32 {
+    fn eq(&self, other: &crate::SqlU256) -> bool {
+        crate::SqlU256::from(*self) == *other
+    }
+}
+impl PartialEq<crate::SqlU256> for u64 {
+    fn eq(&self, other: &crate::SqlU256) -> bool {
+        crate::SqlU256::from(*self) == *other
+    }
+}
+impl PartialEq<crate::SqlU256> for u128 {
+    fn eq(&self, other: &crate::SqlU256) -> bool {
+        crate::SqlU256::from(*self) == *other
+    }
+}
+
+impl PartialOrd<crate::SqlU256> for u8 {
+    fn partial_cmp(&self, other: &crate::SqlU256) -> Option<std::cmp::Ordering> {
+        crate::SqlU256::from(*self).partial_cmp(other)
+    }
+}
+impl PartialOrd<crate::SqlU256> for u16 {
+    fn partial_cmp(&self, other: &crate::SqlU256) -> Option<std::cmp::Ordering> {
+        crate::SqlU256::from(*self).partial_cmp(other)
+    }
+}
+impl PartialOrd<crate::SqlU256> for u32 {
+    fn partial_cmp(&self, other: &crate::SqlU256) -> Option<std::cmp::Ordering> {
+        crate::SqlU256::from(*self).partial_cmp(other)
+    }
+}
+impl PartialOrd<crate::SqlU256> for u64 {
+    fn partial_cmp(&self, other: &crate::SqlU256) -> Option<std::cmp::Ordering> {
+        crate::SqlU256::from(*self).partial_cmp(other)
+    }
+}
+impl PartialOrd<crate::SqlU256> for u128 {
+    fn partial_cmp(&self, other: &crate::SqlU256) -> Option<std::cmp::Ordering> {
+        crate::SqlU256::from(*self).partial_cmp(other)
+    }
+}
+
+// Fallible conversions: SqlU256 -> u8/u16/u32/u64/u128
 
 #[cfg(test)]
 mod tests {
