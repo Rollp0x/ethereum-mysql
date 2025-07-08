@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2025-07-08
+
+### ✨ API Ergonomics & Macro Improvements
+- **New conversion methods for SqlU256:** Added `as_u8`, `as_u16`, `as_u32`, `as_u64`, `as_u128` methods for ergonomic and safe conversion to primitive types, returning `Result` on overflow.
+- **Bidirectional comparison:** Now supports direct comparison between `SqlU256` and all unsigned primitives (`u8`, `u16`, `u32`, `u64`, `u128`) in both directions (`SqlU256 == u32` and `u32 == SqlU256`).
+- **Macro renaming:** Renamed macro `sqltopic!` to `sqlhash!` for clarity and consistency, as both topic and transaction hashes are 32-byte hashes.
+- **Macro convenience:** All macros (`sqladdress!`, `sqlhash!`, `sqlu256!`) now support compile-time checked, ergonomic constant creation for Ethereum types.
+- **Docs & comments:** Improved documentation and usage examples for all macros and new APIs.
+- **Internal cleanup:** Removed unnecessary or duplicate trait implementations, clarified type boundaries, and improved code comments.
+
+### 🛠️ Other
+- **No Default for SqlFixedBytes<32>:** Confirmed that hash types do not implement `Default`, avoiding meaningless zero values for hashes.
+- **Version bump:** Crate version updated to 3.0.1.
+
 ## [3.0.0] - 2025-06-30
 
 ### 🚨 Breaking Changes & Major Refactor

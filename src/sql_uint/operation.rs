@@ -85,7 +85,7 @@ macro_rules! impl_binary_assign_op {
     };
 }
 
-use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign, RemAssign};
+use std::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 impl_binary_assign_op!(AddAssign, add_assign, +);
 impl_binary_assign_op!(SubAssign, sub_assign, -);
 impl_binary_assign_op!(MulAssign, mul_assign, *);

@@ -39,12 +39,10 @@ macro_rules! sqladdress {
 /// const HASH: SqlFixedBytes<32> = sqlhash!("0x...hex...");
 #[macro_export]
 macro_rules! sqlhash {
-    ($s:expr) => {
-        {
-            // Compile-time check via alloy's FixedBytes macro
-            $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!(32, $s))
-        }
-    };
+    ($s:expr) => {{
+        // Compile-time check via alloy's FixedBytes macro
+        $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!(32, $s))
+    }};
 }
 
 /// Macro to create a SqlU256 from a literal (compile-time check, panics at compile time for negative values).
