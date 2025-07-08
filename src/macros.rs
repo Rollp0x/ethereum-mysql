@@ -39,21 +39,47 @@ macro_rules! sqladdress {
 /// const HASH: SqlFixedBytes<32> = sqlhash!("0x...hex...");
 #[macro_export]
 macro_rules! sqlhash {
-    ($s:expr) => {{
-        // Compile-time check via alloy's FixedBytes macro
-        $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!(32, $s))
+    ($s:literal) => {{
+        $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!($s))
     }};
 }
-
-/// Macro to create a SqlU256 from a literal (compile-time check, panics at compile time for negative values).
+/// Macro to create a SqlU256 from a literal (compile-time check for negative, only usable in runtime context).
 ///
 /// Usage:
-/// const A: SqlU256 = sqlu256!(100); // OK
-/// const B: SqlU256 = sqlu256!(-100); // Compile error
+/// let a: SqlU256 = sqlu256!(100); // OK
+/// let b: SqlU256 = sqlu256!(-100); // Compile error
+/// // const A: SqlU256 = sqlu256!(100); // ❌ Not supported: From<u128> is not const
 #[macro_export]
 macro_rules! sqlu256 {
     ($val:literal) => {{
         const _: () = assert!($val >= 0, "SqlU256 cannot be negative at compile time");
         $crate::SqlU256::from($val as u128)
     }};
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::SqlHash;
+    use alloy::primitives::hex;
+
+    #[test]
+    fn test_sqlhash_const_and_runtime() {
+        // Const context
+        const TRANSFER_EVENT_SIGNATURE: SqlHash = sqlhash!("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+        // Runtime context
+        let runtime_hash: SqlHash = sqlhash!("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+        // Both should be equal
+        assert_eq!(TRANSFER_EVENT_SIGNATURE, runtime_hash);
+        // Should match expected bytes
+        let expected = hex::decode("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").unwrap();
+        assert_eq!(TRANSFER_EVENT_SIGNATURE.as_slice(), expected.as_slice());
+    }
+    #[test]
+    fn test_sqlu256_runtime() {
+        // Runtime context only
+        let runtime_amount: crate::SqlU256 = sqlu256!(12345678901234567890u128);
+        use alloy::primitives::U256;
+        let expected = U256::from(12345678901234567890u128);
+        assert_eq!(*runtime_amount, expected);
+    }
 }
