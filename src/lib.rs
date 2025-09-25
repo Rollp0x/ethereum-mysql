@@ -75,6 +75,8 @@ mod sql_bytes;
 mod sql_fixed_bytes;
 mod sql_uint;
 
+pub mod utils;
+
 pub use sql_address::{Address, SqlAddress};
 pub use sql_bytes::{Bytes, SqlBytes};
 pub use sql_fixed_bytes::{FixedBytes, SqlFixedBytes, SqlHash, SqlTopicHash};

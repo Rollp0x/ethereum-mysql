@@ -71,23 +71,26 @@ impl SqlAddress {
         SqlAddress(addr)
     }
 
-    /// Returns the inner alloy Address.
+    /// Returns a reference to the inner alloy Address.
     ///
     /// This method provides access to the underlying `alloy::primitives::Address`
     /// for use with other Ethereum libraries or blockchain RPC calls.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ethereum_mysql::SqlAddress;
-    /// use alloy::primitives::Address;
-    /// use std::str::FromStr;
-    ///
-    /// let sql_addr = SqlAddress::from(Address::ZERO);
-    /// let inner: Address = sql_addr.inner();
-    /// ```
-    pub fn inner(&self) -> Address {
+    pub fn inner(&self) -> &Address {
+        &self.0
+    }
+
+    /// Consumes self and returns the inner Address.
+    pub fn into_inner(self) -> Address {
         self.0
+    }
+
+    /// Creates a SqlAddress from a byte slice (must be 20 bytes).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice is not exactly 20 bytes.
+    pub fn from_slice(bytes: &[u8]) -> Self {
+        SqlAddress(Address::from_slice(bytes))
     }
 }
 
@@ -166,11 +169,11 @@ mod tests {
         // Create from Address
         let addr = Address::ZERO;
         let sql_addr = SqlAddress::from(addr);
-        assert_eq!(sql_addr.inner(), addr);
+        assert_eq!(sql_addr.into_inner(), addr);
 
         // Create from string
         let sql_addr = SqlAddress::from_str(ZERO_ADDRESS_STR).unwrap();
-        assert_eq!(sql_addr.inner(), Address::ZERO);
+        assert_eq!(sql_addr.into_inner(), Address::ZERO);
     }
 
     #[test]
@@ -205,7 +208,7 @@ mod tests {
 
         // Test AsRef trait
         let addr_ref: &Address = sql_addr.as_ref();
-        assert_eq!(*addr_ref, sql_addr.inner());
+        assert_eq!(addr_ref, sql_addr.inner());
     }
 
     #[test]
@@ -351,7 +354,7 @@ mod tests {
         assert_eq!(SqlAddress::ZERO, zero_from_alloy);
 
         // Verify other properties of ZERO constant
-        assert_eq!(SqlAddress::ZERO.inner(), Address::ZERO);
+        assert_eq!(SqlAddress::ZERO.into_inner(), Address::ZERO);
         assert_eq!(*SqlAddress::ZERO, Address::ZERO);
 
         // Verify it works in different contexts

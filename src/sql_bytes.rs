@@ -19,6 +19,13 @@ impl SqlBytes {
     pub fn inner(&self) -> &Bytes {
         &self.0
     }
+
+    /// Converts the bytes to a SqlU256 using big-endian interpretation.
+    ///
+    /// If the length is less than 32, left-pads with zeros; if more, truncates high bytes (alloy behavior).
+    pub fn to_u256(&self) -> crate::SqlU256 {
+        crate::SqlU256::from(alloy::primitives::U256::from_be_slice(self.as_ref()))
+    }
 }
 
 impl AsRef<Bytes> for SqlBytes {

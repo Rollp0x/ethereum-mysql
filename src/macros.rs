@@ -1,5 +1,5 @@
-//! This module provides convenient macros for creating SqlAddress instances
-//! from string literals at compile time, similar to alloy's address! macro.
+//! This module provides convenient macros for creating SqlAddress and SqlFixedBytes instances
+//! from string literals at compile time, similar to alloy's address! and fixed_bytes! macros.
 
 /// Creates a SqlAddress from a hex string literal.
 ///
@@ -33,14 +33,20 @@ macro_rules! sqladdress {
     };
 }
 
-/// Macro to create a SqlFixedBytes<32> from a hex string literal at compile time.
+/// Macro to create a SqlFixedBytes<N> from a hex string literal at compile time.
 ///
 /// Usage:
-/// const HASH: SqlFixedBytes<32> = sqlhash!("0x...hex...");
+/// ```
+/// use ethereum_mysql::{sqlhash, SqlFixedBytes};
+/// const HASH: SqlFixedBytes<32> = sqlhash!(32, "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+/// const SHORT: SqlFixedBytes<4> = sqlhash!(4, "0x12345678");
+/// ```
+///
+/// N 必须是字面量（literal），与 hex 长度匹配，否则编译报错。
 #[macro_export]
 macro_rules! sqlhash {
-    ($s:literal) => {{
-        $crate::SqlFixedBytes::<32>::from_bytes($crate::alloy::primitives::fixed_bytes!($s))
+    ($n:literal, $s:literal) => {{
+        $crate::SqlFixedBytes::<$n>::from_bytes($crate::alloy::primitives::fixed_bytes!($s))
     }};
 }
 /// Macro to create a SqlU256 from a literal (compile-time check for negative, only usable in runtime context).
@@ -65,14 +71,26 @@ mod tests {
     #[test]
     fn test_sqlhash_const_and_runtime() {
         // Const context
-        const TRANSFER_EVENT_SIGNATURE: SqlHash = sqlhash!("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+        const TRANSFER_EVENT_SIGNATURE: SqlHash = sqlhash!(
+            32,
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        );
         // Runtime context
-        let runtime_hash: SqlHash = sqlhash!("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+        let runtime_hash: SqlHash = sqlhash!(
+            32,
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        );
         // Both should be equal
         assert_eq!(TRANSFER_EVENT_SIGNATURE, runtime_hash);
         // Should match expected bytes
-        let expected = hex::decode("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").unwrap();
+        let expected =
+            hex::decode("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+                .unwrap();
         assert_eq!(TRANSFER_EVENT_SIGNATURE.as_slice(), expected.as_slice());
+        // Shorter length test
+        const SHORT: crate::SqlFixedBytes<4> = sqlhash!(4, "0x095ea7b3");
+        let short_expected = hex::decode("095ea7b3").unwrap();
+        assert_eq!(SHORT.as_slice(), short_expected.as_slice());
     }
     #[test]
     fn test_sqlu256_runtime() {

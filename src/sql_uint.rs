@@ -89,6 +89,14 @@ impl<const BITS: usize, const LIMBS: usize> SqlUint<BITS, LIMBS> {
 }
 
 impl SqlU256 {
+    /// The number of wei in one ether (10^18).
+    pub const ETHER: Self = Self(U256::from_limbs([0x0, 0x8AC7230489E80000, 0, 0]));
+
+    /// Creates a SqlU256 from a big-endian byte slice (pads/truncates as alloy U256).
+    pub fn from_be_slice(bytes: &[u8]) -> Self {
+        Self(alloy::primitives::U256::from_be_slice(bytes))
+    }
+
     /// Try to convert this value to u8. Returns Err if out of range.
     pub fn as_u8(&self) -> Result<u8, &'static str> {
         if self.0 > U256::from(u8::MAX) {

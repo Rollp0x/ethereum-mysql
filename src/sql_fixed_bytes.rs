@@ -103,6 +103,12 @@ impl<const BYTES: usize> std::fmt::Display for SqlFixedBytes<BYTES> {
     }
 }
 
+impl<const BYTES: usize> Default for SqlFixedBytes<BYTES> {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
