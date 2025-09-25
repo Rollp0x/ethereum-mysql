@@ -33,7 +33,7 @@ macro_rules! sqladdress {
     };
 }
 
-/// Macro to create a SqlFixedBytes<N> from a hex string literal at compile time.
+/// Macro to create a `SqlFixedBytes<N>` from a hex string literal at compile time.
 ///
 /// Usage:
 /// ```
@@ -54,7 +54,7 @@ macro_rules! sqlhash {
 /// Usage:
 /// let a: SqlU256 = sqlu256!(100); // OK
 /// let b: SqlU256 = sqlu256!(-100); // Compile error
-/// // const A: SqlU256 = sqlu256!(100); // ❌ Not supported: From<u128> is not const
+/// // const A: SqlU256 = sqlu256!(100); // ❌ Not supported: `From<u128>` is not const
 #[macro_export]
 macro_rules! sqlu256 {
     ($val:literal) => {{

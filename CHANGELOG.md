@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-09-25
+
+### 🛠️ Bug Fixes
+
+#### Documentation Build Fixes
+- **Fixed docs.rs build failure**: Added `#![cfg_attr(docsrs, feature(doc_cfg))]` to enable `doc_cfg` feature for docs.rs compatibility
+- **Fixed HTML tag warnings**: Escaped generic type parameters (`SqlFixedBytes<N>`, `From<u128>`) in documentation to prevent rustdoc HTML parsing issues
+- **Improved documentation quality**: All rustdoc warnings resolved, ensuring clean documentation generation
+
+### 📚 Documentation Improvements
+- **Better type display**: Generic types are now properly formatted in documentation
+- **Cleaner docs.rs integration**: Full compatibility with docs.rs automatic documentation generation
+- **Enhanced readability**: Improved formatting of technical documentation
+
 ## [3.1.0] - 2025-09-25
 
 ### ✨ Major New Features

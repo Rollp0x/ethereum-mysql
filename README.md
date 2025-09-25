@@ -72,7 +72,7 @@ Request structs can use `SqlAddress`/`SqlU256` directly for automatic validation
 Add to your `Cargo.toml`:
 
 ```toml
-ethereum-mysql = "3.1.0"
+ethereum-mysql = "3.1.1"
 ```
 
 ---

@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! # ethereum-mysql
 //!
 //! Type-safe, ergonomic wrappers for Ethereum types with seamless SQLx database integration.
@@ -9,7 +10,7 @@
 //!
 //! - **SqlAddress**: Type-safe wrapper for `alloy::primitives::Address` (Ethereum address)
 //! - **SqlU256**: Wrapper for `alloy::primitives::U256` (256-bit unsigned integer) with full arithmetic and conversion support
-//! - **SqlFixedBytes<N>**: Generic wrapper for fixed-size byte arrays (e.g. hashes, topics)
+//! - **`SqlFixedBytes<N>`**: Generic wrapper for fixed-size byte arrays (e.g. hashes, topics)
 //!   - **SqlHash**/**SqlTopicHash**: Type aliases for `SqlFixedBytes<32>` (commonly used for hashes/topics)
 //! - **SqlBytes**: Wrapper for dynamic-length byte arrays
 //!
@@ -32,12 +33,12 @@
 //!
 //! ## Recommended Database Column Types
 //!
-//! | Type             | Recommended Column Type |
-//! |------------------|------------------------|
-//! | SqlAddress       | VARCHAR(42)            |
-//! | SqlU256          | VARCHAR(66)            |
-//! | SqlFixedBytes<N> | VARCHAR(2+2*N)         |
-//! | SqlBytes         | TEXT                   |
+//! | Type               | Recommended Column Type |
+//! |--------------------|------------------------|
+//! | SqlAddress         | VARCHAR(42)            |
+//! | SqlU256            | VARCHAR(66)            |
+//! | `SqlFixedBytes<N>` | VARCHAR(2+2*N)         |
+//! | SqlBytes           | TEXT                   |
 //!
 //! For PostgreSQL, use `TEXT` for all string types. For MySQL/SQLite, use `VARCHAR` as above.
 //!
