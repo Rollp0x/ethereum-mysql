@@ -23,8 +23,9 @@
 - **Type-safe wrappers:** `SqlAddress`, `SqlU256`, `SqlFixedBytes`, `SqlBytes` for direct DB integration
 - **Arithmetic operations:** Full arithmetic and comparison for `SqlU256` (U256), including with Rust primitives
 - **Type conversions:** Seamless conversion between wrappers and Rust integer types
-- **Compile-time macros:** Create addresses at compile time with `sqladdress!`
-- **Constants:** Pre-defined constants like `SqlAddress::ZERO`, `SqlU256::ZERO`
+- **Compile-time macros:** Create addresses and hashes at compile time with `sqladdress!`, `sqlhash!`
+- **Constants:** Pre-defined constants like `SqlAddress::ZERO`, `SqlU256::ZERO`, `SqlU256::ETHER`
+- **Decimal utilities:** Parse and format Ethereum amounts with `parse_sether`/`format_sether`
 - **Serde support:** Optional JSON serialization with serde
 - **SQLx native:** Implements `sqlx_core::Type`, `sqlx_core::Encode`, and `sqlx_core::Decode` for all wrappers
 - **Pure Rust:** No C dependencies, async-first, production ready
@@ -71,7 +72,7 @@ Request structs can use `SqlAddress`/`SqlU256` directly for automatic validation
 Add to your `Cargo.toml`:
 
 ```toml
-ethereum-mysql = "3.0.0"
+ethereum-mysql = "3.1.0"
 ```
 
 ---
@@ -89,11 +90,12 @@ let addr2 = SqlAddress::from_str("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d").u
 const ADMIN: SqlAddress = sqladdress!("0x742d35Cc6635C0532925a3b8D42cC72b5c2A9A1d");
 ```
 
-### U256 Usage
+### U256 Usage & Ethereum Constants
 ```rust
-use ethereum_mysql::SqlU256;
+use ethereum_mysql::{SqlU256, utils::{parse_sether, format_sether}};
 use std::str::FromStr;
 
+// Basic usage
 let small = SqlU256::from(42u64);
 let large = SqlU256::from(u128::MAX);
 let zero = SqlU256::ZERO;
@@ -101,12 +103,32 @@ let from_decimal = SqlU256::from_str("123456789").unwrap();
 let from_hex = SqlU256::from_str("0x75bcd15").unwrap();
 assert_eq!(from_decimal, from_hex);
 
+// Ethereum amount calculations
+let one_ether = SqlU256::ETHER;  // 10^18 wei
+let half_ether = SqlU256::ETHER / 2;
+let gas_price = SqlU256::from(20_000_000_000u64); // 20 gwei
+
+// Decimal string parsing and formatting
+let amount = parse_sether("1.5").unwrap(); // Parse 1.5 ETH
+assert_eq!(format_sether(amount).unwrap(), "1.500000000000000000");
+
+// Arithmetic operations
 let a = SqlU256::from(100u64);
 let b = SqlU256::from(50u64);
 let sum = a + b;
 let product = a * b;
 let doubled = a * 2;
 let tripled = 3 * a;
+```
+
+### Hash and FixedBytes Creation
+```rust
+use ethereum_mysql::{sqlhash, SqlFixedBytes};
+
+// Create various sized hashes at compile time
+const TX_HASH: SqlFixedBytes<32> = sqlhash!(32, "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+const FUNCTION_SELECTOR: SqlFixedBytes<4> = sqlhash!(4, "0xa9059cbb");
+const TOPIC: SqlFixedBytes<32> = sqlhash!(32, "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 ```
 
 ### SQLx Integration (String Mode)
